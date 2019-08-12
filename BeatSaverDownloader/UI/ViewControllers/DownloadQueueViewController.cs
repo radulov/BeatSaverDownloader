@@ -34,9 +34,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 SongDownloader.Instance.songDownloaded += SongDownloaded;
                 _songListTableCellInstance = Resources.FindObjectsOfTypeAll<LevelListTableCell>().First(x => (x.name == "LevelListTableCell"));
 
-                RectTransform viewControllersContainer = FindObjectsOfType<RectTransform>().First(x => x.name == "ViewControllers");
-
-                var headerPanelRectTransform = Instantiate(viewControllersContainer.GetComponentsInChildren<RectTransform>(true).First(x => x.name == "HeaderPanel" && x.parent.name == "PlayerSettingsViewController"), rectTransform);
+                var headerPanelRectTransform = Instantiate(Resources.FindObjectsOfTypeAll<PlayerSettingsViewController>().First().GetComponentsInChildren<RectTransform>(true).First(x => x.name == "HeaderPanel"), rectTransform);
                 headerPanelRectTransform.gameObject.SetActive(true);
 
                 _titleText = headerPanelRectTransform.GetComponentInChildren<TextMeshProUGUI>();
