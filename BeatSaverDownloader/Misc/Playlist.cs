@@ -1,8 +1,6 @@
 ﻿using BeatSaverDownloader.UI;
 using Newtonsoft.Json;
 using SimpleJSON;
-using SongLoaderPlugin;
-using SongLoaderPlugin.OverrideClasses;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,9 +32,10 @@ namespace BeatSaverDownloader.Misc
                         playlistFiles.AddRange(beatDropJSONPlaylists);
                         playlistFiles.AddRange(beatDropBPLISTPlaylists);
                         Plugin.log.Info($"Found {beatDropJSONPlaylists.Length + beatDropBPLISTPlaylists.Length} playlists in BeatDrop folder");
-                    }catch(Exception e)
+                    }
+                    catch (Exception e)
                     {
-                        Plugin.log.Warn("Unable to load playlists from BeatDrop folder! Exception: "+e);
+                        Plugin.log.Warn("Unable to load playlists from BeatDrop folder! Exception: " + e);
                     }
                 }
 
@@ -50,7 +49,7 @@ namespace BeatSaverDownloader.Misc
                 if (fullRefresh)
                 {
                     loadedPlaylists.Clear();
-                    
+
                     foreach (string path in playlistFiles)
                     {
                         try
@@ -70,7 +69,7 @@ namespace BeatSaverDownloader.Misc
                 {
                     foreach (string path in playlistFiles)
                     {
-                        if(!loadedPlaylists.Any(x => x.fileLoc == path))
+                        if (!loadedPlaylists.Any(x => x.fileLoc == path))
                         {
                             try
                             {
@@ -78,8 +77,8 @@ namespace BeatSaverDownloader.Misc
                                 if (Path.GetFileName(path) == "favorites.json" && playlist.playlistTitle == "Your favorite songs")
                                     continue;
                                 loadedPlaylists.Add(playlist);
-
-                                if (SongLoader.AreSongsLoaded)
+                                //bananbread songloader loaded playlist id
+                                if (SongCore.Loader.AreSongsLoaded)
                                 {
                                     MatchSongsForPlaylist(playlist);
                                 }
@@ -101,11 +100,11 @@ namespace BeatSaverDownloader.Misc
         public static void AddSongToPlaylist(Playlist playlist, PlaylistSong song)
         {
             playlist.songs.Add(song);
-            if(playlist.playlistTitle == "Your favorite songs")
+            if (playlist.playlistTitle == "Your favorite songs")
             {
                 playlist.SavePlaylist();
             }
-            (SongLoader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks.FirstOrDefault(x => x is PlaylistLevelPackSO && (x as PlaylistLevelPackSO).playlist == playlist) as PlaylistLevelPackSO)?.UpdateDataFromPlaylist();
+              (SongCore.Loader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks.FirstOrDefault(x => x is PlaylistLevelPackSO && (x as PlaylistLevelPackSO).playlist == playlist) as PlaylistLevelPackSO)?.UpdateDataFromPlaylist();
         }
 
         public static void RemoveLevelFromPlaylists(string levelId)
@@ -124,20 +123,21 @@ namespace BeatSaverDownloader.Misc
                 }
             }
 
-            foreach(var pack in SongLoader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks)
+            foreach (var pack in SongCore.Loader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks)
             {
-                if(pack is PlaylistLevelPackSO)
+                if (pack is PlaylistLevelPackSO)
                 {
                     (pack as PlaylistLevelPackSO).UpdateDataFromPlaylist();
                 }
             }
+
         }
 
-        public static void RemoveLevelFromPlaylist(Playlist playlist, string levelId)
+        public static void RemoveLevelFromPlaylist(Playlist playlist, string hash)
         {
-            if (playlist.songs.Any(x => x.levelId == levelId || (x.level != null && x.level.levelID == levelId)))
+            if (playlist.songs.Any(x => x.hash == hash ))
             {
-                PlaylistSong song = playlist.songs.First(x => x.levelId == levelId || (x.level != null && x.level.levelID == levelId));
+                PlaylistSong song = playlist.songs.First(x => x.hash == hash);
                 song.level = null;
                 playlist.songs.Remove(song);
             }
@@ -145,49 +145,56 @@ namespace BeatSaverDownloader.Misc
             {
                 playlist.SavePlaylist();
             }
-
-            (SongLoader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks.FirstOrDefault(x => x is PlaylistLevelPackSO && (x as PlaylistLevelPackSO).playlist == playlist) as PlaylistLevelPackSO)?.UpdateDataFromPlaylist();
+            (SongCore.Loader.CustomBeatmapLevelPackCollectionSO.beatmapLevelPacks.FirstOrDefault(x => x is PlaylistLevelPackSO && (x as PlaylistLevelPackSO).playlist == playlist) as PlaylistLevelPackSO)?.UpdateDataFromPlaylist();
         }
 
         public static void MatchSongsForPlaylist(Playlist playlist, bool matchAll = false)
         {
-            if (!SongLoader.AreSongsLoaded || SongLoader.AreSongsLoading || playlist.playlistTitle == "All songs" || playlist.playlistTitle == "Your favorite songs") return;
+            //bananbread playlist id  
+            if (!SongCore.Loader.AreSongsLoaded || SongCore.Loader.AreSongsLoading || playlist.playlistTitle == "All songs" || playlist.playlistTitle == "Your favorite songs") return;
+
             if (!playlist.songs.All(x => x.level != null) || matchAll)
             {
                 playlist.songs.AsParallel().ForAll(x =>
                 {
+                //    Plugin.log.Info(x.songName);
+                //    Plugin.log.Info(x.key);
                     if (x.level == null || matchAll)
                     {
                         try
                         {
                             if (!string.IsNullOrEmpty(x.levelId)) //check that we have levelId and if we do, try to match level
                             {
-                                x.level = SongLoader.CustomLevels.FirstOrDefault(y => y.levelID == x.levelId);
+                                x.level = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => y.levelID == x.levelId);
                             }
                             if (x.level == null && !string.IsNullOrEmpty(x.hash)) //if level is still null, check that we have hash and if we do, try to match level
                             {
-                                x.level = SongLoader.CustomLevels.FirstOrDefault(y => y.levelID.StartsWith(x.hash.ToUpper()));
+                                x.level = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => string.Equals(y.levelID.Split('_')[2], x.hash, StringComparison.OrdinalIgnoreCase));
                             }
+                            /*
                             if (x.level == null && !string.IsNullOrEmpty(x.key)) //if level is still null, check that we have key and if we do, try to match level
                             {
-                                ScrappedSong song = ScrappedData.Songs.FirstOrDefault(z => z.Key == x.key);
-                                if (song != null)
+                                var pathKey = SongCore.Loader.CustomLevels.Keys.FirstOrDefault(path => path.Contains($"\\{x.key} "));
+                                if (!string.IsNullOrEmpty(pathKey))
                                 {
-                                    x.level = SongLoader.CustomLevels.FirstOrDefault(y => y.levelID.StartsWith(song.Hash));
+                                    x.level = SongCore.Loader.CustomLevels[pathKey];
                                 }
-                                else
-                                {
-                                    x.level = SongLoader.CustomLevels.FirstOrDefault(y => y.customSongInfo.path.Contains(x.key));
-                                }
+
                             }
+                            if (x.level == null) //If Still null, grab first level with same songName
+                            {
+                                               x.level = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => y.songName == x.songName);
+                            }
+                            */
                         }
                         catch (Exception e)
                         {
-                            Plugin.log.Warn($"Unable to match song with {(string.IsNullOrEmpty(x.key) ? " unknown key!" : ("key " + x.key + " !"))} Exception: {e}");
+                            Plugin.log.Warn($"Unable to match song with {(string.IsNullOrEmpty(x.key) ? " unknown key!" : ("key " + x.key + " !"))}");
                         }
                     }
                 });
             }
+
         }
 
         public static void MatchSongsForAllPlaylists(bool matchAll = false)
@@ -199,6 +206,7 @@ namespace BeatSaverDownloader.Misc
                 {
                     MatchSongsForPlaylist(loadedPlaylists[i], matchAll);
                 }
+                //bananbread playlist levelpacks 
                 HMMainThreadDispatcher.instance.Enqueue(() => { SongListTweaks.Instance.UpdateLevelPacks(); });
             });
         }
@@ -208,7 +216,7 @@ namespace BeatSaverDownloader.Misc
     {
         public string key { get { if (_key == null) return ""; else return _key; } set { _key = value; } }
         private string _key;
-
+        public string newKey = "";
         public string songName { get { if (_songName == null) return ""; else return _songName; } set { _songName = value; } }
         private string _songName;
 
@@ -217,10 +225,10 @@ namespace BeatSaverDownloader.Misc
 
         public string levelId { get { if (_levelId == null) return ""; else return _levelId; } set { _levelId = value; } }
         private string _levelId;
-        
+
         [JsonIgnore]
-        public BeatmapLevelSO level { get { return _level; } set { if (_level != value) { _level = value; UpdateSongInfo(); } } }
-        private BeatmapLevelSO _level;
+        public CustomPreviewBeatmapLevel level { get { return _level; } set { if (_level != value) { _level = value; UpdateSongInfo(); } } }
+        private CustomPreviewBeatmapLevel _level;
 
         [NonSerialized]
         public bool oneSaber;
@@ -229,7 +237,7 @@ namespace BeatSaverDownloader.Misc
 
         public IEnumerator MatchKey()
         {
-            if (!string.IsNullOrEmpty(key) || level == null || !(level is CustomLevel))
+            if (!string.IsNullOrEmpty(key) || level == null || !(level is CustomPreviewBeatmapLevel))
                 yield break;
 
             if (!string.IsNullOrEmpty(hash))
@@ -238,7 +246,7 @@ namespace BeatSaverDownloader.Misc
                 if (song != null)
                     key = song.Key;
                 else
-                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(hash, (Song bsSong) => { if (bsSong != null) key = bsSong.id; });
+                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(hash, (Song bsSong) => { if (bsSong != null) key = bsSong.key; });
             }
             else if (!string.IsNullOrEmpty(levelId))
             {
@@ -246,14 +254,15 @@ namespace BeatSaverDownloader.Misc
                 if (song != null)
                     key = song.Key;
                 else
-                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(levelId.Substring(0, Math.Min(32, levelId.Length)), (Song bsSong) => { if (bsSong != null) key = bsSong.id; });
-            }else if (level != null)
+                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(level.levelID.Split('_')[2], (Song bsSong) => { if (bsSong != null) key = bsSong.key; });
+            }
+            else if (level != null)
             {
                 ScrappedSong song = ScrappedData.Songs.FirstOrDefault(x => level.levelID.StartsWith(x.Hash));
                 if (song != null)
                     key = song.Key;
                 else
-                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(level.levelID.Substring(0, Math.Min(32, level.levelID.Length)), (Song bsSong) => { if (bsSong != null) key = bsSong.id; });
+                    yield return SongDownloader.Instance.RequestSongByLevelIDCoroutine(level.levelID.Split('_')[2], (Song bsSong) => { if (bsSong != null) key = bsSong.key; });
             }
         }
 
@@ -263,7 +272,8 @@ namespace BeatSaverDownloader.Misc
             {
                 songName = level.songName + " " + level.songSubName;
                 levelId = level.levelID;
-                hash = (level is CustomLevel) ? level.levelID.Substring(0, 32) : "";
+                //bananbread id customlevel 
+                hash = SongCore.Utilities.Hashing.GetCustomLevelHash(level);
             }
         }
 
@@ -277,9 +287,9 @@ namespace BeatSaverDownloader.Misc
             {
                 return levelId.ToUpper().StartsWith(song.hash.ToUpper());
             }
-            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(song.id))
+            if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(song.key))
             {
-                return key.ToUpper() == song.id.ToUpper();
+                return key.ToUpper() == song.key.ToUpper();
             }
             return false;
         }
@@ -375,7 +385,7 @@ namespace BeatSaverDownloader.Misc
 
         public void SavePlaylist(string path = "")
         {
-            if(ScrappedData.Songs.Count > 0)
+            if (ScrappedData.Songs.Count > 0)
                 SharedCoroutineStarter.instance.StartCoroutine(SavePlaylistCoroutine(path));
         }
 
@@ -386,9 +396,10 @@ namespace BeatSaverDownloader.Misc
             {
                 image = Sprites.SpriteToBase64(icon);
                 playlistSongCount = songs.Count;
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
-                Plugin.log.Critical("Unable to save playlist! Exception: "+e);
+                Plugin.log.Critical("Unable to save playlist! Exception: " + e);
                 yield break;
             }
             foreach (PlaylistSong song in songs)
@@ -423,8 +434,8 @@ namespace BeatSaverDownloader.Misc
             if (playlist == null) return false;
 
             int songCountThis = (songs != null ? (songs.Count > 0 ? songs.Count : playlistSongCount) : playlistSongCount);
-            int songCountObj  = (playlist.songs != null ? (playlist.songs.Count > 0 ? playlist.songs.Count : playlist.playlistSongCount) : playlist.playlistSongCount);
-            
+            int songCountObj = (playlist.songs != null ? (playlist.songs.Count > 0 ? playlist.songs.Count : playlist.playlistSongCount) : playlist.playlistSongCount);
+
             return playlistTitle == playlist.playlistTitle &&
                    playlistAuthor == playlist.playlistAuthor &&
                    songCountThis == songCountObj;

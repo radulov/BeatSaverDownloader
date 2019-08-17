@@ -1,7 +1,6 @@
 ﻿using BeatSaverDownloader.Misc;
 using BeatSaverDownloader.UI.FlowCoordinators;
 using CustomUI.BeatSaber;
-using SongLoaderPlugin;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private StandardLevelDetailView _levelDetails;
 
         public bool addDownloadButton = true;
-        private Image coverImage;
+        private RawImage coverImage;
 
         protected override void DidActivate(bool firstActivation, ActivationType type)
         {
@@ -46,7 +45,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
                 _levelDetails = GetComponentsInChildren<StandardLevelDetailView>(true).First(x => x.name == "LevelDetail");
                 _levelDetails.gameObject.SetActive(true);
-
+                (_levelDetails.transform as RectTransform).anchoredPosition = new Vector2(-40f, 0f);
                 RemoveCustomUIElements(rectTransform);
 
                 Destroy(GetComponentsInChildren<LevelParamsPanel>().First(x => x.name == "LevelParamsPanel").gameObject);
@@ -101,7 +100,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     Destroy(_levelDetails.practiceButton.gameObject);
                 }
 
-                coverImage = _levelDetails.GetPrivateField<Image>("_coverImage");
+                coverImage = _levelDetails.GetPrivateField<RawImage>("_coverImage");
             }
         }
 
@@ -132,7 +131,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             authorText.text = newPlaylist.playlistAuthor;
 
-            coverImage.sprite = _currentPlaylist.icon;
+            coverImage.texture = _currentPlaylist.icon.texture;
 
             if (newPlaylist.songs.Count > 0)
             {

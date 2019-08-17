@@ -2,7 +2,6 @@
 using BeatSaverDownloader.UI.ViewControllers;
 using CustomUI.BeatSaber;
 using SimpleJSON;
-using SongLoaderPlugin;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,12 +9,12 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using VRUI;
-
+using Newtonsoft.Json.Linq;
 namespace BeatSaverDownloader.UI.FlowCoordinators
 {
     class MoreSongsFlowCoordinator : FlowCoordinator
     {
-        public const int songsPerPage = 6;
+        public const int songsPerPage = 10;
 
         private BackButtonNavigationController _moreSongsNavigationController;
         private MoreSongsListViewController _moreSongsListViewController;
@@ -26,14 +25,15 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
         private SimpleDialogPromptViewController _simpleDialog;
 
         public int currentPage = 0;
-        public string currentSortMode = "top";
+        public string currentSortMode = "hot";
         public string currentSearchRequest = "";
+        public int currentScoreSaberSortMode = 0;
+        public bool scoreSaber = false;
 
         private List<Song> currentPageSongs = new List<Song>();
-
+        internal static List<Song> currentSortSongs = new List<Song>();
+        internal static int collectedPages = 0;
         private Song _lastSelectedSong;
-
-        private Song _lastDeletedSong;
 
         public void Awake()
         {
@@ -50,18 +50,36 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             }
         }
 
+        private void ResetDetailView()
+        {
+            currentSortSongs.Clear();
+            collectedPages = 0;
+            if (_songDetailViewController.isInViewControllerHierarchy)
+            {
+                PopViewControllerFromNavigationController(_moreSongsNavigationController);
+                _moreSongsListViewController.ResetOffset();
+            }
+
+        }
+
         protected override void DidActivate(bool firstActivation, ActivationType activationType)
         {
             if (firstActivation && activationType == ActivationType.AddedToHierarchy)
             {
                 title = "More Songs";
-                
+
                 _moreSongsListViewController = BeatSaberUI.CreateViewController<MoreSongsListViewController>();
                 _moreSongsListViewController.pageDownPressed += _moreSongsListViewController_pageDownPressed;
                 _moreSongsListViewController.pageUpPressed += _moreSongsListViewController_pageUpPressed;
-                _moreSongsListViewController.sortByTop += () => { currentSortMode = "top"; currentPage = 0; StartCoroutine(GetPage(currentPage, currentSortMode)); currentSearchRequest = ""; };
-                _moreSongsListViewController.sortByNew += () => { currentSortMode = "new"; currentPage = 0; StartCoroutine(GetPage(currentPage, currentSortMode)); currentSearchRequest = ""; };
-                _moreSongsListViewController.sortByPlays += () => { currentSortMode = "plays"; currentPage = 0; StartCoroutine(GetPage(currentPage, currentSortMode)); currentSearchRequest = ""; };
+
+
+                _moreSongsListViewController.sortByTop += () => { ResetDetailView(); currentSortMode = "hot"; currentPage = 0; StartCoroutine(GetPage(currentPage, currentSortMode)); currentSearchRequest = ""; };
+                _moreSongsListViewController.sortByNew += () => { ResetDetailView(); currentSortMode = "latest"; currentPage = 0; StartCoroutine(GetPage(currentPage, currentSortMode)); currentSearchRequest = ""; };
+
+                _moreSongsListViewController.sortByNewlyRanked += () => { ResetDetailView(); currentScoreSaberSortMode = 1; currentPage = 0; StartCoroutine(GetPageScoreSaber(currentPage, currentScoreSaberSortMode)); };
+                _moreSongsListViewController.sortByTrending += () => { ResetDetailView(); currentScoreSaberSortMode = 0; currentPage = 0; StartCoroutine(GetPageScoreSaber(currentPage, currentScoreSaberSortMode)); };
+                _moreSongsListViewController.sortByDifficulty += () => { ResetDetailView(); currentScoreSaberSortMode = 3; currentPage = 0; StartCoroutine(GetPageScoreSaber(currentPage, currentScoreSaberSortMode)); };
+
                 _moreSongsListViewController.searchButtonPressed += _moreSongsListViewController_searchButtonPressed;
                 _moreSongsListViewController.didSelectRow += _moreSongsListViewController_didSelectRow;
 
@@ -76,7 +94,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
             SongDownloader.Instance.songDownloaded -= SongDownloader_songDownloaded;
             SongDownloader.Instance.songDownloaded += SongDownloader_songDownloaded;
-            
+
             SetViewControllersToNavigationConctroller(_moreSongsNavigationController, new VRUIViewController[]
             {
                 _moreSongsListViewController
@@ -86,7 +104,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             currentPage = 0;
             currentSortMode = "top";
             currentSearchRequest = "";
-            StartCoroutine(GetPage(0, "top"));
+            StartCoroutine(GetPageScoreSaber(0, 0));
         }
 
         private void LinkClicked(string link)
@@ -126,21 +144,21 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
         private void _songDetailViewController_favoriteButtonPressed(Song song)
         {
-            if(PluginConfig.favoriteSongs.Any(x => x.Contains(song.hash)))
+            if (PluginConfig.favoriteSongs.Any(x => x.Contains(song.hash)))
             {
-                PluginConfig.favoriteSongs.Remove(SongDownloader.GetLevelID(song));
+                PluginConfig.favoriteSongs.Remove(SongDownloader.GetHash(song));
                 PluginConfig.SaveConfig();
-                
+
                 _songDetailViewController.SetFavoriteState(false);
-                PlaylistsCollection.RemoveLevelFromPlaylist(PlaylistsCollection.loadedPlaylists.First(x => x.playlistTitle == "Your favorite songs"), SongDownloader.GetLevelID(song));
+                PlaylistsCollection.RemoveLevelFromPlaylist(PlaylistsCollection.loadedPlaylists.First(x => x.playlistTitle == "Your favorite songs"), song.hash);
             }
             else
             {
-                PluginConfig.favoriteSongs.Add(SongDownloader.GetLevelID(song));
+                PluginConfig.favoriteSongs.Add(SongDownloader.GetHash(song));
                 PluginConfig.SaveConfig();
 
                 _songDetailViewController.SetFavoriteState(true);
-                PlaylistsCollection.AddSongToPlaylist(PlaylistsCollection.loadedPlaylists.First(x => x.playlistTitle == "Your favorite songs"), new PlaylistSong() { levelId = SongDownloader.GetLevelID(song), songName = song.songName, level = SongDownloader.GetLevel(SongDownloader.GetLevelID(song)), key = song.id });
+                PlaylistsCollection.AddSongToPlaylist(PlaylistsCollection.loadedPlaylists.First(x => x.playlistTitle == "Your favorite songs"), new PlaylistSong() { levelId = SongDownloader.GetHash(song), songName = song.songName, level = SongDownloader.GetLevel(SongDownloader.GetHash(song)), key = song.key });
             }
         }
 
@@ -154,14 +172,12 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             else
             {
                 _simpleDialog.Init("Delete song", $"Do you really want to delete \"{song.songName} {song.songSubName}\"?", "Delete", "Cancel",
-                    (selectedButton) => 
+                    (selectedButton) =>
                     {
                         DismissViewController(_simpleDialog, null, false);
                         if (selectedButton == 0)
-                            DeleteSong(_lastDeletedSong);
-                        _lastDeletedSong = null;
+                            DeleteSong(_lastSelectedSong);
                     });
-                _lastDeletedSong = song;
                 PresentViewController(_simpleDialog, null, false);
             }
         }
@@ -180,7 +196,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
         private void SongDownloader_songDownloaded(Song downloadedSong)
         {
-            if (currentPageSongs != null &&currentPageSongs.Contains(downloadedSong))
+            if (currentSortSongs != null && currentSortSongs.Contains(downloadedSong))
             {
                 _moreSongsListViewController.Refresh();
             }
@@ -197,9 +213,17 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
                 PushViewControllerToNavigationController(_moreSongsNavigationController, _songDetailViewController);
             }
 
-            _songDetailViewController.SetContent(this, currentPageSongs[row]);
-            _descriptionViewController.SetDescription(currentPageSongs[row].description);
-            _lastSelectedSong = currentPageSongs[row];
+            if (!scoreSaber)
+            {
+                _songDetailViewController.SetContent(this, currentSortSongs[(currentPage * 6) + row]);
+                _descriptionViewController.SetDescription(currentSortSongs[(currentPage * 6) + row].description);
+                _lastSelectedSong = currentSortSongs[(currentPage * 6) + row];
+            }
+            else
+            {
+                StartCoroutine(DidSelectRow(row));
+            }
+
         }
 
         private void _moreSongsListViewController_searchButtonPressed()
@@ -219,9 +243,15 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             DismissViewController(_searchViewController);
             _moreSongsListViewController.SelectTopButtons(TopButtonsState.Select);
 
-            currentPage = 0;
-            currentSearchRequest = obj;
-            StartCoroutine(GetSearchResults(currentPage, currentSearchRequest));
+            if (!string.IsNullOrWhiteSpace(obj))
+            {
+                currentSortSongs.Clear();
+                collectedPages = 0;
+                currentPage = 0;
+                currentSearchRequest = obj;
+                StartCoroutine(GetSearchResults(currentPage, currentSearchRequest));
+            }
+
         }
 
         private void _searchViewController_backButtonPressed()
@@ -233,8 +263,15 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
         private void _moreSongsListViewController_pageDownPressed()
         {
             currentPage++;
-            if(string.IsNullOrEmpty(currentSearchRequest))
-                StartCoroutine(GetPage(currentPage, currentSortMode));
+            if (string.IsNullOrEmpty(currentSearchRequest))
+                if (!scoreSaber)
+                {
+                    StartCoroutine(GetPage(currentPage, currentSortMode));
+                }
+                else
+                {
+                    StartCoroutine(GetPageScoreSaber(currentPage, currentScoreSaberSortMode));
+                }
             else
                 StartCoroutine(GetSearchResults(currentPage, currentSearchRequest));
             _moreSongsListViewController.TogglePageUpDownButtons(true, true);
@@ -246,7 +283,14 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             {
                 currentPage--;
                 if (string.IsNullOrEmpty(currentSearchRequest))
-                    StartCoroutine(GetPage(currentPage, currentSortMode));
+                    if (!scoreSaber)
+                    {
+                        StartCoroutine(GetPage(currentPage, currentSortMode));
+                    }
+                    else
+                    {
+                        StartCoroutine(GetPageScoreSaber(currentPage, currentScoreSaberSortMode));
+                    }
                 else
                     StartCoroutine(GetSearchResults(currentPage, currentSearchRequest));
 
@@ -260,19 +304,16 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
                 }
             }
         }
-        
-        public IEnumerator GetPage(int page, string sortBy)
-        {
-            yield return null;
 
-            _moreSongsListViewController.SetLoadingState(true);
-            _moreSongsListViewController.TogglePageUpDownButtons((page > 0), true);
-            _moreSongsListViewController.SetContent(null);
+        public IEnumerator DidSelectRow(int row)
+        {
+
+            yield return null;
+            _songDetailViewController.SetLoadingState(true);
             
-            UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/songs/{sortBy}/{(page * 6)}");
+            UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/by-hash/{currentSortSongs[(currentPage * 6) + row].hash}");
             www.timeout = 15;
             yield return www.SendWebRequest();
-
             if (www.isNetworkError || www.isHttpError)
             {
                 Plugin.log.Error($"Unable to connect to {PluginConfig.beatsaverURL}! " + (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
@@ -281,21 +322,120 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             {
                 try
                 {
-                    JSONNode node = JSON.Parse(www.downloadHandler.text);
 
-                    currentPageSongs.Clear();
-
-                    for (int i = 0; i < Math.Min(node["songs"].Count, songsPerPage); i++)
-                    {
-                        currentPageSongs.Add(new Song(node["songs"][i]));
-                    }
-
-                    _moreSongsListViewController.SetContent(currentPageSongs);
+                    Newtonsoft.Json.Linq.JObject jNode = JObject.Parse(www.downloadHandler.text);
+                    //     JSONNode node = JSON.Parse(www.downloadHandler.text);
+                    currentSortSongs[(currentPage * 6) + row] = new Song((JObject)jNode, false);
+                    //      currentPageSongs[row] = new Song(node["songs"][0], false);
+                    _songDetailViewController.SetContent(this, currentSortSongs[(currentPage * 6) + row]);
+                    _descriptionViewController.SetDescription(currentSortSongs[(currentPage * 6) + row].description);
+                    _lastSelectedSong = currentSortSongs[(currentPage * 6) + row];
                 }
                 catch (Exception e)
                 {
                     Plugin.log.Critical("Unable to parse response! Exception: " + e);
                 }
+            }
+            _songDetailViewController.SetLoadingState(false);
+        }
+
+        public IEnumerator GetPageScoreSaber(int page, int cat)
+        {
+
+            yield return null;
+            scoreSaber = true;
+            _moreSongsListViewController.SetLoadingState(true);
+            _moreSongsListViewController.TogglePageUpDownButtons((page > 0), true);
+            _moreSongsListViewController.SetContent(null);
+            if (page <= collectedPages)
+            {
+                string url = $"{PluginConfig.scoresaberURL}/api.php?function=get-leaderboards&cat={cat}&limit=6&page={(page + 1)}&unique=1";
+                if (cat == 3) { url = url + "&ranked=1"; }
+                UnityWebRequest www = UnityWebRequest.Get(url);
+                www.timeout = 15;
+                yield return www.SendWebRequest();
+
+                if (www.isNetworkError || www.isHttpError)
+                {
+                    Plugin.log.Error($"Unable to connect to {PluginConfig.scoresaberURL}! " + (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
+                }
+                else
+                {
+                    try
+                    {
+                        JObject jNode = JObject.Parse(www.downloadHandler.text);
+                        currentPageSongs.Clear();
+                        for (int i = 0; i < Math.Min(jNode["songs"].Children().Count(), songsPerPage); i++)
+                        {
+                            currentPageSongs.Add(new Song((JObject)jNode["songs"][i], true));
+                        }
+                        currentSortSongs.AddRange(currentPageSongs);
+                        collectedPages++;
+
+                        _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
+                    }
+                    catch (Exception e)
+                    {
+                        Plugin.log.Critical("Unable to parse response! Exception: " + e);
+                    }
+                }
+            }
+            else
+            {
+                _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
+            }
+
+            _moreSongsListViewController.SetLoadingState(false);
+        }
+
+        public IEnumerator GetPage(int page, string sortBy)
+        {
+            yield return null;
+            scoreSaber = false;
+            _moreSongsListViewController.SetLoadingState(true);
+            _moreSongsListViewController.TogglePageUpDownButtons((page > 0), true);
+            _moreSongsListViewController.SetContent(null);
+            if (page <= collectedPages)
+            {
+                UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/{sortBy}/{(page)}");
+                www.timeout = 15;
+                yield return www.SendWebRequest();
+
+                if (www.isNetworkError || www.isHttpError)
+                {
+                    Plugin.log.Error($"Unable to connect to {PluginConfig.beatsaverURL}! " + (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
+                }
+                else
+                {
+                    try
+                    {
+                        JObject jNode = JObject.Parse(www.downloadHandler.text);
+
+                        currentPageSongs.Clear();
+
+                        for (int i = 0; i < Math.Min(jNode["docs"].Children().Count(), songsPerPage); i++)
+                        {
+                            currentPageSongs.Add(new Song((JObject)jNode["docs"][i], false));
+                        }
+                        currentSortSongs.AddRange(currentPageSongs);
+                        collectedPages++;
+            //            Plugin.log.Info(currentSortSongs.Count.ToString());
+                 //       Plugin.log.Info((page * 6).ToString());
+               //         Plugin.log.Info((currentSortSongs.Count - (currentPage * 6)).ToString());
+                        _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
+                    }
+                    catch (Exception e)
+                    {
+                        Plugin.log.Critical("Unable to parse response! Exception: " + e);
+                    }
+                }
+            }
+            else
+            {
+                Plugin.log.Info(currentSortSongs.Count.ToString());
+                Plugin.log.Info((page * 6).ToString());
+                Plugin.log.Info((currentSortSongs.Count - (currentPage * 6)).ToString());
+                _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
             }
             _moreSongsListViewController.SetLoadingState(false);
         }
@@ -303,39 +443,47 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
         public IEnumerator GetSearchResults(int page, string search)
         {
             yield return null;
-
+            scoreSaber = false;
             _moreSongsListViewController.SetLoadingState(true);
             _moreSongsListViewController.TogglePageUpDownButtons((page > 0), true);
             _moreSongsListViewController.SetContent(null);
-
-            UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/songs/search/all/{search}");
-
-            www.timeout = 30;
-            yield return www.SendWebRequest();
-            
-            if (www.isNetworkError || www.isHttpError)
+            if (page <= collectedPages)
             {
-                Plugin.log.Error($"Unable to connect to {PluginConfig.beatsaverURL}! " + (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
+                UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/search/text/{page}?q={search}");
+
+                www.timeout = 30;
+                yield return www.SendWebRequest();
+
+                if (www.isNetworkError || www.isHttpError)
+                {
+                    Plugin.log.Error($"Unable to connect to {PluginConfig.beatsaverURL}! " + (www.isNetworkError ? $"Network error: {www.error}" : (www.isHttpError ? $"HTTP error: {www.error}" : "Unknown error")));
+                }
+                else
+                {
+                    try
+                    {
+                        JObject jNode = JObject.Parse(www.downloadHandler.text);
+
+                        currentPageSongs.Clear();
+
+                        for (int i = 0; i < Math.Min(jNode["docs"].Children().Count(), songsPerPage); i++)
+                        {
+                            currentPageSongs.Add(new Song((JObject)jNode["docs"][i], false));
+                        }
+
+                        currentSortSongs.AddRange(currentPageSongs);
+                        collectedPages++;
+                        _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
+                    }
+                    catch (Exception e)
+                    {
+                        Plugin.log.Critical("Unable to parse response! Exception: " + e);
+                    }
+                }
             }
             else
             {
-                try
-                {
-                    JSONNode node = JSON.Parse(www.downloadHandler.text);
-
-                    currentPageSongs.Clear();
-
-                    for (int i = (page * songsPerPage); i < Math.Min(node["songs"].Count, ((page + 1) * songsPerPage)); i++)
-                    {
-                        currentPageSongs.Add(Song.FromSearchNode(node["songs"][i]));
-                    }
-
-                    _moreSongsListViewController.SetContent(currentPageSongs);
-                }
-                catch (Exception e)
-                {
-                    Plugin.log.Critical("Unable to parse response! Exception: " + e);
-                }
+                _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
             }
             _moreSongsListViewController.SetLoadingState(false);
         }

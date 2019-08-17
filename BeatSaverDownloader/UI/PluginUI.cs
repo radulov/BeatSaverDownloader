@@ -4,8 +4,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using BeatSaverDownloader.UI.FlowCoordinators;
-using SongLoaderPlugin;
-using SongLoaderPlugin.OverrideClasses;
 using CustomUI.BeatSaber;
 using CustomUI.MenuButton;
 using TMPro;
@@ -49,12 +47,12 @@ namespace BeatSaverDownloader.UI
             initialized = false;
 
             StartCoroutine(SetupUI());
-
-            if (!SongLoader.AreSongsLoaded)
-                SongLoader.SongsLoadedEvent += SongLoader_SongsLoadedEvent;
+            
+            if (!SongCore.Loader.AreSongsLoaded)
+                SongCore.Loader.SongsLoadedEvent += SongLoader_SongsLoadedEvent;
             else
-                SongLoader_SongsLoadedEvent(null, SongLoader.CustomLevels);
-
+                SongLoader_SongsLoadedEvent(null, SongCore.Loader.CustomLevels);
+                
             StartCoroutine(ScrappedData.Instance.DownloadScrappedData((List<ScrappedSong> songs) => {
                 if (PlaylistsCollection.loadedPlaylists.Any(x => x.playlistTitle == "Your favorite songs"))
                 {
@@ -62,13 +60,13 @@ namespace BeatSaverDownloader.UI
                 }
             }));
         }
-
-        private void SongLoader_SongsLoadedEvent(SongLoader arg1, List<CustomLevel> arg2)
+        
+        private void SongLoader_SongsLoadedEvent(SongCore.Loader arg1, Dictionary<string, CustomPreviewBeatmapLevel> arg2)
         {
-            SongLoader.SongsLoadedEvent -= SongLoader_SongsLoadedEvent;
+            SongCore.Loader.SongsLoadedEvent -= SongLoader_SongsLoadedEvent;
             _moreSongsButton.interactable = true;
         }
-
+        
         private IEnumerator SetupUI()
         {
             if (initialized) yield break;
@@ -100,7 +98,8 @@ namespace BeatSaverDownloader.UI
             fastScrollSpeed.SetValue += delegate (int value) { PluginConfig.fastScrollSpeed = value; PluginConfig.SaveConfig(); };
 
             _moreSongsButton = MenuButtonUI.AddButton("More songs", "Download more songs from BeatSaver.com!", BeatSaverButtonPressed);
-            _moreSongsButton.interactable = SongLoader.AreSongsLoaded;
+            //bananbread songloader loaded menubutton
+            _moreSongsButton.interactable = SongCore.Loader.AreSongsLoaded;
 
             MenuButtonUI.AddButton("More playlists", PlaylistsButtonPressed);
 
