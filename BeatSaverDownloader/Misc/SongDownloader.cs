@@ -148,7 +148,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-        private async Task ExtractZipAsync(Song songInfo, Stream zipStream, string customSongsPath)
+        private async Task ExtractZipAsync(Song songInfo, Stream zipStream, string customSongsPath, bool overwrite = false)
         {
             try
             {
@@ -166,7 +166,17 @@ namespace BeatSaverDownloader.Misc
                     path += $" ({pathNum})";
                 }
                 Plugin.log.Info(path);
-                await Task.Run(() => archive.ExtractToDirectory(path)).ConfigureAwait(false);
+                await Task.Run(() =>
+                {
+                    archive.ExtractToDirectory(path);
+                    foreach (var entry in archive.Entries)
+                    {
+                        var entryPath = Path.Combine(path, entry.Name); // Name instead of FullName for better security and because song zips don't have nested directories anyway
+                        if (overwrite || !File.Exists(entryPath)) // Either we're overwriting or there's no existing file
+                            entry.ExtractToFile(entryPath, overwrite);
+
+                    }
+                }).ConfigureAwait(false);
                 archive.Dispose();
                 songInfo.path = path;
             }
