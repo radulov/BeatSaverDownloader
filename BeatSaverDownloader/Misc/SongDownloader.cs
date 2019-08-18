@@ -159,7 +159,7 @@ namespace BeatSaverDownloader.Misc
                 basePath = string.Join("", basePath.Split((Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).ToArray())));
                 string path = customSongsPath + "/" + basePath;
 
-                if (Directory.Exists(path))
+                if (!overwrite && Directory.Exists(path))
                 {
                     int pathNum = 1;
                     while (Directory.Exists(path + $" ({pathNum})")) ++pathNum;
