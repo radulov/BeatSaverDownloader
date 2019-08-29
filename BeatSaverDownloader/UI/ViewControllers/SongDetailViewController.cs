@@ -326,13 +326,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
             List<IconSegmentedControl.DataItem> characteristics = new List<IconSegmentedControl.DataItem>();
             foreach(var c in song.metadata.characteristics)
             {
-                BeatmapCharacteristicSO characteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerialiedName(c.name);
-                if (characteristic.characteristicName == "Missing Characteristic")
+                BeatmapCharacteristicSO characteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName(c.name);
+                if (characteristic.characteristicNameLocalizationKey == "Missing Characteristic")
                 {
                     characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, $"Missing Characteristic: {c.name}"));
                 }
                 else
-                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, characteristic.hintText));
+                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, characteristic.descriptionLocalizationKey));
             }
 
             controller.SetData(characteristics.ToArray());

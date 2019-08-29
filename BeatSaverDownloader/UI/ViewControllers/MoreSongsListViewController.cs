@@ -55,7 +55,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             //
             if (!initialized && activationType == ActivationType.AddedToHierarchy)
             {
-                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 26);
+                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 36);
                 _pageUpButton.onClick.AddListener(delegate ()
                 {
                     pageUpPressed?.Invoke();
@@ -97,7 +97,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
 
             _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, false);
+            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
             _lastSelectedRow = -1;
 
         }
@@ -132,7 +132,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             rectTransform.anchoredPosition = new Vector2(currentPosition.x - _offset, currentPosition.y);
         }
 
-        public override TableCell CellForIdx(int row)
+        public override TableCell CellForIdx(TableView tableView, int row)
         {
             LevelListTableCell _tableCell = GetTableCell(false);
 

@@ -48,7 +48,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             else
             {
                 _customListTableView.ReloadData();
-                _customListTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, false);
+                _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
                 _lastSelectedRow = -1;
             }
         }
@@ -73,7 +73,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if (_customListTableView != null)
             {
                 _customListTableView.ReloadData();
-                _customListTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, false);
+                _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
             }
         }
 
@@ -93,7 +93,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             return playlistList.Count;
         }
 
-        public override TableCell CellForIdx(int row)
+        public override TableCell CellForIdx(TableView tableView, int row)
         {
             LevelListTableCell _tableCell = GetTableCell(false);
 

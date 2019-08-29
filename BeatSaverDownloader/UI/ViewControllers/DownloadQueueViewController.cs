@@ -29,7 +29,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             //
             if (!initialized && activationType == ActivationType.AddedToHierarchy)
             {
-                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 25);
+                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 35);
                 SongDownloader.Instance.songDownloaded -= SongDownloaded;
                 SongDownloader.Instance.songDownloaded += SongDownloaded;
                 _songListTableCellInstance = Resources.FindObjectsOfTypeAll<LevelListTableCell>().First(x => (x.name == "LevelListTableCell"));
@@ -132,7 +132,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             Plugin.log.Info($"Removed {removed} songs from queue");
 
             _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, true);
+            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, true);
 
             if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading || x.songQueueState == SongQueueState.Queued) == 0)
             {
@@ -151,7 +151,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 Plugin.log.Info($"Removed {removed} songs from queue");
 
             _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, true);
+            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, true);
 
             if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading || x.songQueueState == SongQueueState.Queued) == 0)
             {
@@ -172,7 +172,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             return queuedSongs.Count;
         }
 
-        public override TableCell CellForIdx(int row)
+        public override TableCell CellForIdx(TableView tableView, int row)
         {
             LevelListTableCell _tableCell = GetTableCell(false);
 

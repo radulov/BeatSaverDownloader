@@ -46,15 +46,15 @@ namespace BeatSaverDownloader.UI
             public string steamID;
             public string ticket;
             public int direction;
-        }
+        }   
 
         private ResultsViewController _standardLevelResultsViewController;
 
         private TextMeshProUGUI _ratingText;
         private Button _upvoteButton;
         private Button _downvoteButton;
-   //     private Button _reviewButton;
-
+        //     private Button _reviewButton;
+        private VRPlatformHelper platformHelper;
         private IBeatmapLevel _lastLevel;
         private Song _lastBeatSaverSong;
 
@@ -158,8 +158,8 @@ namespace BeatSaverDownloader.UI
                         _lastBeatSaverSong = new Song((JObject)jNode, false);
 
                         _ratingText.text = (_lastBeatSaverSong.upVotes - _lastBeatSaverSong.downVotes).ToString();
-
-                        bool canVote = (/*PluginConfig.apiAccessToken != PluginConfig.apiTokenPlaceholder ||*/ (VRPlatformHelper.instance.vrPlatformSDK == VRPlatformHelper.VRPlatformSDK.OpenVR || Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc")));
+                        if (platformHelper == null) platformHelper = Resources.FindObjectsOfTypeAll<VRPlatformHelper>().First();
+                        bool canVote = (/*PluginConfig.apiAccessToken != PluginConfig.apiTokenPlaceholder ||*/ (platformHelper.vrPlatformSDK == VRPlatformHelper.VRPlatformSDK.OpenVR || Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc")));
 
                         _upvoteButton.interactable = canVote;
                         _downvoteButton.interactable = canVote;
@@ -194,7 +194,7 @@ namespace BeatSaverDownloader.UI
             //          StartCoroutine(VoteWithAccessToken(upvote));
             //      }
             //else
-            if ((VRPlatformHelper.instance.vrPlatformSDK == VRPlatformHelper.VRPlatformSDK.OpenVR || Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc")))
+            if ((platformHelper.vrPlatformSDK == VRPlatformHelper.VRPlatformSDK.OpenVR || Environment.CommandLine.ToLower().Contains("-vrmode oculus") || Environment.CommandLine.ToLower().Contains("fpfc")))
             {
                 StartCoroutine(VoteWithSteamID(upvote));
             }

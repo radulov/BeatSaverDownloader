@@ -369,7 +369,9 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
                         {
                             currentPageSongs.Add(new Song((JObject)jNode["songs"][i], true));
                         }
-                        currentSortSongs.AddRange(currentPageSongs);
+                        foreach (var song in currentPageSongs)
+                            if (!currentSortSongs.Any(x => x.Compare(song)))
+                                currentSortSongs.Add(song);
                         collectedPages++;
 
                         _moreSongsListViewController.SetContent(currentSortSongs.GetRange(page * 6, Math.Min(6, currentSortSongs.Count - (currentPage * 6))));
@@ -417,7 +419,9 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
                         {
                             currentPageSongs.Add(new Song((JObject)jNode["docs"][i], false));
                         }
-                        currentSortSongs.AddRange(currentPageSongs);
+                        foreach (var song in currentPageSongs)
+                            if (!currentSortSongs.Any(x => x.Compare(song)))
+                                currentSortSongs.Add(song);
                         collectedPages++;
             //            Plugin.log.Info(currentSortSongs.Count.ToString());
                  //       Plugin.log.Info((page * 6).ToString());

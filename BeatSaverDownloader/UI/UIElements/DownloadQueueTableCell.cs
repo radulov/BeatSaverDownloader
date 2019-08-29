@@ -14,10 +14,10 @@ namespace BeatSaverDownloader.UI.UIElements
     {
         Song song;
         
-        protected override void Awake()
-        {
-            base.Awake();
-        }
+    //    protected override void Awake()
+    //    {
+    //        base.Awake();
+    //    }
 
         public void Init(Song _song)
         {            

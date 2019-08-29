@@ -198,7 +198,7 @@ namespace BeatSaverDownloader.UI
                 _fastPageUpButton = Instantiate(_pageUp, _tableViewRectTransform, false);
                 (_fastPageUpButton.transform as RectTransform).anchorMin = new Vector2(0.5f, 1f);
                 (_fastPageUpButton.transform as RectTransform).anchorMax = new Vector2(0.5f, 1f);
-                (_fastPageUpButton.transform as RectTransform).anchoredPosition = new Vector2(-26f, 0.25f);
+                (_fastPageUpButton.transform as RectTransform).anchoredPosition = new Vector2(-29f, 0.25f);
                 (_fastPageUpButton.transform as RectTransform).sizeDelta = new Vector2(8f, 6f);
                 _fastPageUpButton.GetComponentsInChildren<RectTransform>().First(x => x.name == "BG").sizeDelta = new Vector2(8f, 6f);
                 _fastPageUpButton.GetComponentsInChildren<UnityEngine.UI.Image>().First(x => x.name == "Arrow").sprite = Sprites.DoubleArrow;
@@ -210,7 +210,7 @@ namespace BeatSaverDownloader.UI
                 _fastPageDownButton = Instantiate(_pageDown, _tableViewRectTransform, false);
                 (_fastPageDownButton.transform as RectTransform).anchorMin = new Vector2(0.5f, 0f);
                 (_fastPageDownButton.transform as RectTransform).anchorMax = new Vector2(0.5f, 0f);
-                (_fastPageDownButton.transform as RectTransform).anchoredPosition = new Vector2(-26f, -1f);
+                (_fastPageDownButton.transform as RectTransform).anchoredPosition = new Vector2(-29f, -1f);
                 (_fastPageDownButton.transform as RectTransform).sizeDelta = new Vector2(8f, 6f);
                 _fastPageDownButton.GetComponentsInChildren<RectTransform>().First(x => x.name == "BG").sizeDelta = new Vector2(8f, 6f);
                 _fastPageDownButton.GetComponentsInChildren<UnityEngine.UI.Image>().First(x => x.name == "Arrow").sprite = Sprites.DoubleArrow;
@@ -224,7 +224,7 @@ namespace BeatSaverDownloader.UI
                 _randomButton.onClick.AddListener(() =>
                 {
                     int randomRow = UnityEngine.Random.Range(0, _songSelectionTableView.dataSource.NumberOfCells());
-                    _songSelectionTableView.ScrollToCellWithIdx(randomRow, TableView.ScrollPositionType.Beginning, false);
+                    _songSelectionTableView.ScrollToCellWithIdx(randomRow, TableViewScroller.ScrollPositionType.Beginning, false);
                     _songSelectionTableView.SelectCellWithIdx(randomRow, true);
                 });
                 _randomButton.name = "CustomUIButton";
@@ -543,7 +543,7 @@ namespace BeatSaverDownloader.UI
                     }
 
                     var tableView = levelsTableView.GetPrivateField<TableView>("_tableView");
-                    tableView.ScrollToCellWithIdx(songIndex, TableView.ScrollPositionType.Beginning, false);
+                    tableView.ScrollToCellWithIdx(songIndex, TableViewScroller.ScrollPositionType.Beginning, false);
                     tableView.SelectCellWithIdx(songIndex, true);
                 }
             }
@@ -801,7 +801,7 @@ namespace BeatSaverDownloader.UI
 
                                 _levelListViewController.SetData(CustomHelpers.GetLevelPackWithLevels(levels.Cast<CustomPreviewBeatmapLevel>().ToArray(), lastPack?.packName ?? "Custom Songs", lastPack?.coverImage));
                                 TableView listTableView = levelsTableView.GetPrivateField<TableView>("_tableView");
-                                listTableView.ScrollToCellWithIdx(selectedIndex, TableView.ScrollPositionType.Beginning, false);
+                                listTableView.ScrollToCellWithIdx(selectedIndex, TableViewScroller.ScrollPositionType.Beginning, false);
                                 levelsTableView.SetPrivateField("_selectedRow", selectedIndex);
                                 listTableView.SelectCellWithIdx(selectedIndex, true);
                             }
@@ -963,13 +963,15 @@ namespace BeatSaverDownloader.UI
 
         private void FastScrollUp(TableView tableView, int pages)
         {
-            float targetPosition = tableView.GetProperty<float>("position") - (Mathf.Max(1f, tableView.GetNumberOfVisibleCells() - 1f) * tableView.GetPrivateField<float>("_cellSize") * pages);
-            if (targetPosition < 0f)
-            {
-                targetPosition = 0f;
-            }
+            var scroller = tableView.GetField<TableViewScroller>("_scroller");
+            float targetPosition = scroller.position - (Mathf.Max(1f, tableView.visibleCells.Count() - 1f) * tableView.GetPrivateField<float>("_cellSize") * pages);
+            scroller.ScrollToCellWithIdx((int)(targetPosition / tableView.GetPrivateField<float>("_cellSize")), TableViewScroller.ScrollPositionType.Beginning, true);
+            //  if (targetPosition < 0f)
+            //   {
+            //       targetPosition = 0f;
+            //   }
 
-            tableView.SetPrivateField("_targetPosition", targetPosition);
+            //   tableView.SetPrivateField("_targetPosition", targetPosition);
 
             tableView.enabled = true;
             tableView.RefreshScrollButtons();
@@ -979,15 +981,15 @@ namespace BeatSaverDownloader.UI
         {
             float num = (tableView.GetPrivateField<TableView.TableType>("_tableType") != TableView.TableType.Vertical) ? tableView.GetPrivateField<RectTransform>("_scrollRectTransform").rect.width : tableView.GetPrivateField<RectTransform>("_scrollRectTransform").rect.height;
             float num2 = tableView.GetPrivateField<int>("_numberOfCells") * tableView.GetPrivateField<float>("_cellSize") - num;
+            var scroller = tableView.GetField<TableViewScroller>("_scroller");
+            float targetPosition = scroller.position + (Math.Max(1f, tableView.visibleCells.Count() - 1f) * tableView.GetPrivateField<float>("_cellSize") * pages);
+            scroller.ScrollToCellWithIdx((int)(targetPosition / tableView.GetPrivateField<float>("_cellSize")), TableViewScroller.ScrollPositionType.Beginning, true);
+         //   if (targetPosition > num2)
+        //    {
+        //        targetPosition = num2;
+         //   }
 
-            float targetPosition = tableView.GetProperty<float>("position") + (Mathf.Max(1f, tableView.GetNumberOfVisibleCells() - 1f) * tableView.GetPrivateField<float>("_cellSize") * pages);
-
-            if (targetPosition > num2)
-            {
-                targetPosition = num2;
-            }
-
-            tableView.SetPrivateField("_targetPosition", targetPosition);
+       //     scroller.SetPrivateField("_targetPosition", targetPosition);
 
             tableView.enabled = true;
             tableView.RefreshScrollButtons();
@@ -1004,7 +1006,7 @@ namespace BeatSaverDownloader.UI
                     (lastPack as PlaylistLevelPackSO).UpdateDataFromPlaylist();
                     TableView levelsTableView = _levelListViewController.GetPrivateField<LevelPackLevelsTableView>("_levelPackLevelsTableView").GetPrivateField<TableView>("_tableView");
                     levelsTableView.ReloadData();
-                    levelsTableView.ScrollToCellWithIdx(0, TableView.ScrollPositionType.Beginning, false);
+                    levelsTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
                     levelsTableView.SelectCellWithIdx(0, false);
                 }
             }
@@ -1175,7 +1177,6 @@ namespace BeatSaverDownloader.UI
 
     [HarmonyPatch(typeof(LevelPackLevelsTableView))]
     [HarmonyPatch("CellForIdx")]
-    [HarmonyPatch(new Type[] { typeof(int) })]
     class LevelListTableViewPatch
     {
 
