@@ -310,8 +310,9 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
             yield return null;
             _songDetailViewController.SetLoadingState(true);
-            
+
             UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/by-hash/{currentSortSongs[(currentPage * 6) + row].hash}");
+            www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             www.timeout = 15;
             yield return www.SendWebRequest();
             if (www.isNetworkError || www.isHttpError)
@@ -353,6 +354,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
                 if (cat == 3) { url = url + "&ranked=1"; }
                 UnityWebRequest www = UnityWebRequest.Get(url);
                 www.timeout = 15;
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
                 yield return www.SendWebRequest();
 
                 if (www.isNetworkError || www.isHttpError)
@@ -401,6 +403,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             {
                 UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/{sortBy}/{(page)}");
                 www.timeout = 15;
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
                 yield return www.SendWebRequest();
 
                 if (www.isNetworkError || www.isHttpError)
@@ -454,8 +457,8 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             if (page <= collectedPages)
             {
                 UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/search/text/{page}?q={search}");
-
                 www.timeout = 30;
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
                 yield return www.SendWebRequest();
 
                 if (www.isNetworkError || www.isHttpError)
