@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine.SceneManagement;
 using BeatSaverDownloader.Misc;
 using BeatSaverDownloader.UI;
@@ -13,7 +14,12 @@ namespace BeatSaverDownloader
     {
         public static Plugin instance;
         public static IPA.Logging.Logger log;
-        
+
+        public string UserAgent
+        {
+            get => $"BeatSaverDownloader/{Assembly.GetExecutingAssembly().GetName().Version}";
+        }
+
         public void Init(object nullObject, IPA.Logging.Logger logger)
         {
             log = logger;
@@ -23,7 +29,7 @@ namespace BeatSaverDownloader
         {
             PluginConfig.SaveConfig();
         }
-        
+
         public void OnApplicationStart()
         {
             instance = this;
@@ -31,7 +37,7 @@ namespace BeatSaverDownloader
             Sprites.ConvertToSprites();
             PlaylistsCollection.ReloadPlaylists();
             SongCore.Loader.SongsLoadedEvent += SongCore_SongsLoadedEvent;
-            
+
             BSEvents.OnLoad();
             BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
         }
@@ -52,7 +58,7 @@ namespace BeatSaverDownloader
             }
         }
 
-        
+
         public void SongCore_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
         {
             try
@@ -64,7 +70,7 @@ namespace BeatSaverDownloader
                 Plugin.log.Critical("Unable to match songs for all playlists! Exception: "+e);
             }
         }
-        
+
 
         public void OnUpdate()
         {

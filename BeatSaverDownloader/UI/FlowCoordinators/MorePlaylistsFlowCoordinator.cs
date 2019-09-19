@@ -16,7 +16,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
     class MorePlaylistsFlowCoordinator : FlowCoordinator
     {
         public static string playlistAPI_URL = "https://bsaber.com/PlaylistAPI/playlistAPI.json";
-        
+
         private BackButtonNavigationController _playlistsNavigationController;
         private PlaylistListViewController _playlistsListViewController;
         private PlaylistDetailViewController _playlistDetailViewController;
@@ -45,11 +45,11 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             if (firstActivation && activationType == ActivationType.AddedToHierarchy)
             {
                 title = "More Playlists";
-                
+
                 _playlistsListViewController = BeatSaberUI.CreateViewController<PlaylistListViewController>();
                 _playlistsListViewController.didSelectRow += _morePlaylistsListViewController_didSelectRow;
                 _playlistsListViewController.highlightDownloadedPlaylists = true;
-                
+
                 _loadingIndicator = BeatSaberUI.CreateLoadingSpinner(_playlistsNavigationController.transform);
             }
 
@@ -81,7 +81,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             {
                 PushViewControllerToNavigationController(_playlistsNavigationController, _playlistDetailViewController);
             }
-            
+
             _playlistDetailViewController.SetContent(playlist);
         }
 
@@ -119,6 +119,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
             UnityWebRequest www = UnityWebRequest.Get(playlistAPI_URL);
             www.timeout = 15;
+            www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             yield return www.SendWebRequest();
 
             if (www.isNetworkError || www.isHttpError)
@@ -157,6 +158,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
             UnityWebRequest www = UnityWebRequest.Get(url);
             www.timeout = 15;
+            www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             yield return www.SendWebRequest();
 
             if (www.isNetworkError || www.isHttpError)

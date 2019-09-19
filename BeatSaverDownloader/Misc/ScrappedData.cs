@@ -67,6 +67,7 @@ namespace BeatSaverDownloader.Misc
             try
             {
                 www = UnityWebRequest.Get(scrappedDataURL);
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
 
                 asyncRequest = www.SendWebRequest();
             }
@@ -98,11 +99,11 @@ namespace BeatSaverDownloader.Misc
                 Plugin.log.Info("Received response from github.com...");
 
                 Songs = JsonConvert.DeserializeObject<List<ScrappedSong>>(www.downloadHandler.text).OrderByDescending(x => x.Diffs.Count > 0 ? x.Diffs.Max(y => y.Stars) : 0).ToList();
-                
+
                 callback?.Invoke(Songs);
                 Plugin.log.Info("Scrapped data downloaded!");
             }
         }
-        
+
     }
 }

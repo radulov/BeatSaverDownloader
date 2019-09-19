@@ -78,6 +78,7 @@ namespace BeatSaverDownloader.Misc
             try
             {
                 www = UnityWebRequest.Get(songInfo.downloadURL);
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
 
                 asyncRequest = www.SendWebRequest();
             }
@@ -437,6 +438,7 @@ namespace BeatSaverDownloader.Misc
         public IEnumerator RequestSongByLevelIDCoroutine(string levelId, Action<Song> callback)
         {
             UnityWebRequest wwwId = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/by-hash/" + levelId);
+            wwwId.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             wwwId.timeout = 10;
 
             yield return wwwId.SendWebRequest();
@@ -469,6 +471,7 @@ namespace BeatSaverDownloader.Misc
         public IEnumerator RequestSongByKeyCoroutine(string key, Action<Song> callback)
         {
             UnityWebRequest wwwId = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/detail/" + key);
+            wwwId.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             wwwId.timeout = 10;
 
             yield return wwwId.SendWebRequest();

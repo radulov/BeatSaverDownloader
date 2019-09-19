@@ -1115,6 +1115,7 @@ namespace BeatSaverDownloader.UI
 
             UnityWebRequest www = UnityWebRequest.Get(url);
             www.timeout = 15;
+            www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             yield return www.SendWebRequest();
 
             if (www.isNetworkError || www.isHttpError)
