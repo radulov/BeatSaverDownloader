@@ -78,6 +78,7 @@ namespace BeatSaverDownloader.Misc
             try
             {
                 www = UnityWebRequest.Get(songInfo.downloadURL);
+                www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
 
                 asyncRequest = www.SendWebRequest();
             }
@@ -148,7 +149,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-        private async Task ExtractZipAsync(Song songInfo, Stream zipStream, string customSongsPath)
+        private async Task ExtractZipAsync(Song songInfo, Stream zipStream, string customSongsPath, bool overwrite = false)
         {
             try
             {
@@ -159,14 +160,24 @@ namespace BeatSaverDownloader.Misc
                 basePath = string.Join("", basePath.Split((Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).ToArray())));
                 string path = customSongsPath + "/" + basePath;
 
-                if (Directory.Exists(path))
+                if (!overwrite && Directory.Exists(path))
                 {
                     int pathNum = 1;
                     while (Directory.Exists(path + $" ({pathNum})")) ++pathNum;
                     path += $" ({pathNum})";
                 }
                 Plugin.log.Info(path);
-                await Task.Run(() => archive.ExtractToDirectory(path)).ConfigureAwait(false);
+                await Task.Run(() =>
+                {
+                    archive.ExtractToDirectory(path);
+                    foreach (var entry in archive.Entries)
+                    {
+                        var entryPath = Path.Combine(path, entry.Name); // Name instead of FullName for better security and because song zips don't have nested directories anyway
+                        if (overwrite || !File.Exists(entryPath)) // Either we're overwriting or there's no existing file
+                            entry.ExtractToFile(entryPath, overwrite);
+
+                    }
+                }).ConfigureAwait(false);
                 archive.Dispose();
                 songInfo.path = path;
             }
@@ -427,6 +438,7 @@ namespace BeatSaverDownloader.Misc
         public IEnumerator RequestSongByLevelIDCoroutine(string levelId, Action<Song> callback)
         {
             UnityWebRequest wwwId = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/by-hash/" + levelId);
+            wwwId.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             wwwId.timeout = 10;
 
             yield return wwwId.SendWebRequest();
@@ -459,6 +471,7 @@ namespace BeatSaverDownloader.Misc
         public IEnumerator RequestSongByKeyCoroutine(string key, Action<Song> callback)
         {
             UnityWebRequest wwwId = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/detail/" + key);
+            wwwId.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             wwwId.timeout = 10;
 
             yield return wwwId.SendWebRequest();

@@ -46,7 +46,7 @@ namespace BeatSaverDownloader.UI
             public string steamID;
             public string ticket;
             public int direction;
-        }   
+        }
 
         private ResultsViewController _standardLevelResultsViewController;
 
@@ -139,6 +139,7 @@ namespace BeatSaverDownloader.UI
         {
        //     Plugin.log.Info($"{PluginConfig.beatsaverURL}/api/maps/by-hash/{SongCore.Utilities.Hashing.GetCustomLevelHash(level as CustomPreviewBeatmapLevel).ToLower()}");
             UnityWebRequest www = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/maps/by-hash/{SongCore.Utilities.Hashing.GetCustomLevelHash(level as CustomPreviewBeatmapLevel).ToLower()}");
+            www.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
 
             yield return www.SendWebRequest();
 
@@ -209,6 +210,7 @@ namespace BeatSaverDownloader.UI
 
             UnityWebRequest voteWWW = UnityWebRequest.Get($"{PluginConfig.beatsaverURL}/api/vote/user/{_lastBeatSaverSong.key}/{(upvote ? 1 : -1)}/{PluginConfig.apiAccessToken}");
             voteWWW.timeout = 30;
+            voteWWW.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             yield return voteWWW.SendWebRequest();
 
             if (voteWWW.isNetworkError)
@@ -368,6 +370,7 @@ namespace BeatSaverDownloader.UI
             byte[] jsonBytes = new System.Text.UTF8Encoding().GetBytes(json);
             voteWWW.uploadHandler = new UploadHandlerRaw(jsonBytes);
             voteWWW.SetRequestHeader("Content-Type", "application/json");
+            voteWWW.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             voteWWW.timeout = 30;
             yield return voteWWW.SendWebRequest();
 

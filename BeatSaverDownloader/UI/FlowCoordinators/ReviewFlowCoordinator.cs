@@ -127,8 +127,8 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
 
         public void SubmitPressed()
         {
-            _simpleDialog.Init("Post a review?", "All reviews are final and you will no longer be able to leave a review about this song!\n\nAre you sure you want to continue?", "Yes", "No", 
-                (selectedIndex) => 
+            _simpleDialog.Init("Post a review?", "All reviews are final and you will no longer be able to leave a review about this song!\n\nAre you sure you want to continue?", "Yes", "No",
+                (selectedIndex) =>
                 {
                     DismissViewController(_simpleDialog, null, false);
 
@@ -152,6 +152,7 @@ namespace BeatSaverDownloader.UI.FlowCoordinators
             voteWWW.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(JsonUtility.ToJson(review)));
             voteWWW.downloadHandler = new DownloadHandlerBuffer();
             voteWWW.SetRequestHeader("Content-Type", "application/json");
+            voteWWW.SetRequestHeader("user-agent", Plugin.instance.UserAgent);
             voteWWW.timeout = 30;
             yield return voteWWW.SendWebRequest();
 
