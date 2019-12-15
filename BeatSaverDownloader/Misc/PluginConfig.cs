@@ -7,7 +7,6 @@ using System.Text;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using BeatSaverDownloader.UI;
 using IPA.Config;
 
 namespace BeatSaverDownloader.Misc

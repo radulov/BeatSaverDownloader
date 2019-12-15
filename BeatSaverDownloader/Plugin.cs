@@ -2,7 +2,6 @@
 using System.Reflection;
 using UnityEngine.SceneManagement;
 using BeatSaverDownloader.Misc;
-using BeatSaverDownloader.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using BS_Utils.Gameplay;
