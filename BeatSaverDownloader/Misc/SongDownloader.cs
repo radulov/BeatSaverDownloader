@@ -265,7 +265,6 @@ namespace BeatSaverDownloader.Misc
             string path = "";
             //      Console.WriteLine("Deleting: " + song.path);
             SongCore.Loader.Instance.DeleteSong(song.path, false);
-            PlaylistsCollection.MatchSongsForAllPlaylists(true);
             /*
             CustomLevel level = SongLoader.CustomLevels.FirstOrDefault(x => x.levelID.StartsWith(song.hash));
 
@@ -299,14 +298,7 @@ namespace BeatSaverDownloader.Misc
                 {
                     Plugin.log.Info("Deleting \"" + path.Substring(path.LastIndexOf('/')) + "\"...");
 
-                    if (PluginConfig.deleteToRecycleBin)
-                    {
-                        FileOperationAPIWrapper.MoveToRecycleBin(path);
-                    }
-                    else
-                    {
                         Directory.Delete(path, true);
-                    }
 
                     string songHash = Directory.GetParent(path).Name;
 
@@ -349,14 +341,7 @@ namespace BeatSaverDownloader.Misc
                     {
                         Plugin.log.Info("Deleting \"" + path.Substring(0, path.LastIndexOf('/')) + "\"...");
 
-                        if (PluginConfig.deleteToRecycleBin)
-                        {
-                            FileOperationAPIWrapper.MoveToRecycleBin(path);
-                        }
-                        else
-                        {
-                            Directory.Delete(path, true);
-                        }
+                        Directory.Delete(path, true);
 
                         try
                         {

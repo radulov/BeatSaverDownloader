@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using System.IO;
+using System.Reflection;
 
 namespace BeatSaverDownloader.Misc
 {
@@ -46,21 +48,21 @@ namespace BeatSaverDownloader.Misc
         {
             Plugin.log.Info("Creating sprites...");
 
-            AddToFavorites =        CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.AddToFavorites.png");
-            RemoveFromFavorites =   CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.RemoveFromFavorites.png");
-            StarFull =              CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.StarFull.png");
-            StarEmpty =             CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.StarEmpty.png");
-            BeastSaberLogo =        CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.BeastSaberLogo.png");
-            ReviewIcon =            CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.ReviewIcon.png");
-            ThumbUp =               CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbUp.png");
-            ThumbDown =             CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbDown.png");
-            PlaylistIcon =          CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.PlaylistIcon.png");
-            SongIcon =              CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.SongIcon.png");
-            DownloadIcon =          CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.DownloadIcon.png");
-            PlayIcon =              CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.PlayIcon.png");
-            DoubleArrow =           CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.DoubleArrow.png");
-            RandomIcon =            CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.RandomIcon.png");
-            DeleteIcon =            CustomUI.Utilities.UIUtilities.LoadSpriteFromResources("BeatSaverDownloader.Assets.DeleteIcon.png");
+            AddToFavorites =        LoadSpriteFromResources("BeatSaverDownloader.Assets.AddToFavorites.png");
+            RemoveFromFavorites =   LoadSpriteFromResources("BeatSaverDownloader.Assets.RemoveFromFavorites.png");
+            StarFull =              LoadSpriteFromResources("BeatSaverDownloader.Assets.StarFull.png");
+            StarEmpty =             LoadSpriteFromResources("BeatSaverDownloader.Assets.StarEmpty.png");
+            BeastSaberLogo =        LoadSpriteFromResources("BeatSaverDownloader.Assets.BeastSaberLogo.png");
+            ReviewIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.ReviewIcon.png");
+            ThumbUp =               LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbUp.png");
+            ThumbDown =             LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbDown.png");
+            PlaylistIcon =          LoadSpriteFromResources("BeatSaverDownloader.Assets.PlaylistIcon.png");
+            SongIcon =              LoadSpriteFromResources("BeatSaverDownloader.Assets.SongIcon.png");
+            DownloadIcon =          LoadSpriteFromResources("BeatSaverDownloader.Assets.DownloadIcon.png");
+            PlayIcon =              LoadSpriteFromResources("BeatSaverDownloader.Assets.PlayIcon.png");
+            DoubleArrow =           LoadSpriteFromResources("BeatSaverDownloader.Assets.DoubleArrow.png");
+            RandomIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.RandomIcon.png");
+            DeleteIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.DeleteIcon.png");
 
             Plugin.log.Info("Creating sprites... Done!");
         }
@@ -94,6 +96,63 @@ namespace BeatSaverDownloader.Misc
         //    texture.filterMode = FilterMode.Trilinear;
         //    texture.LoadImage(imageData);
         //    return texture;
+        }
+
+
+        // Image helpers
+
+        public static Texture2D LoadTextureRaw(byte[] file)
+        {
+            if (file.Count() > 0)
+            {
+                Texture2D Tex2D = new Texture2D(2, 2);
+                if (Tex2D.LoadImage(file))
+                    return Tex2D;
+            }
+            return null;
+        }
+
+        public static Texture2D LoadTextureFromFile(string FilePath)
+        {
+            if (File.Exists(FilePath))
+                return LoadTextureRaw(File.ReadAllBytes(FilePath));
+
+            return null;
+        }
+
+        public static Texture2D LoadTextureFromResources(string resourcePath)
+        {
+            return LoadTextureRaw(GetResource(Assembly.GetCallingAssembly(), resourcePath));
+        }
+
+        public static Sprite LoadSpriteRaw(byte[] image, float PixelsPerUnit = 100.0f)
+        {
+            return LoadSpriteFromTexture(LoadTextureRaw(image), PixelsPerUnit);
+        }
+
+        public static Sprite LoadSpriteFromTexture(Texture2D SpriteTexture, float PixelsPerUnit = 100.0f)
+        {
+            if (SpriteTexture)
+                return Sprite.Create(SpriteTexture, new Rect(0, 0, SpriteTexture.width, SpriteTexture.height), new Vector2(0, 0), PixelsPerUnit);
+            return null;
+        }
+
+        public static Sprite LoadSpriteFromFile(string FilePath, float PixelsPerUnit = 100.0f)
+        {
+            return LoadSpriteFromTexture(LoadTextureFromFile(FilePath), PixelsPerUnit);
+        }
+
+        public static Sprite LoadSpriteFromResources(string resourcePath, float PixelsPerUnit = 100.0f)
+        {
+            return LoadSpriteRaw(GetResource(Assembly.GetCallingAssembly(), resourcePath), PixelsPerUnit);
+        }
+
+        public static byte[] GetResource(Assembly asm, string ResourceName)
+        {
+            System.IO.Stream stream = asm.GetManifestResourceStream(ResourceName);
+            byte[] data = new byte[stream.Length];
+            stream.Read(data, 0, (int)stream.Length);
+            return data;
         }
     }
 }
