@@ -14,6 +14,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
     public class MoreSongsListViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
     {
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.moreSongsList.bsml";
+        [UIParams]
+        BeatSaberMarkupLanguage.Parser.BSMLParserParams parserParams;
         [UIComponent("list")]
         public CustomListTableData customListTableData;
         [UIComponent("loadingModal")]
@@ -92,14 +94,12 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             if(value)
             {
-                loadingSpinner.gameObject.SetActive(true);
-               
+                parserParams.EmitEvent("open-loadingModal");
                 loadingSpinner.ShowDownloadingProgress("Fetching More Songs", 0);
             }
             else
             {
-
-                loadingSpinner.gameObject.SetActive(false);
+                parserParams.EmitEvent("close-loadingModal");
             }
         }
     }
