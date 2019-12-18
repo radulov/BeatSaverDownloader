@@ -16,6 +16,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.moreSongsList.bsml";
         [UIComponent("list")]
         public CustomListTableData customListTableData;
+        [UIComponent("loadingModal")]
+        public ModalView loadingModal;
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
         public bool Working
@@ -30,7 +32,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
-            MoreSongsFlowCoordinator.didSelectSong.Invoke(_songs[row], customListTableData.data[row].icon);
+            MoreSongsFlowCoordinator.didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
         [UIAction("pageDownPressed")]
         internal void PageDownPressed()
@@ -46,6 +48,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         internal async void GetNewPage(uint count = 1)
         {
+            if (Working) return;
             Plugin.log.Info($"Fetching {count} new page(s)");
             Working = true;
             for (uint i = 0; i < count; ++i)
@@ -76,8 +79,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
-
-            loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), gameObject.transform);
+            loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
             customListTableData.data.Clear();
             // Add items here
             GetNewPage(2);
@@ -91,10 +93,12 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if(value)
             {
                 loadingSpinner.gameObject.SetActive(true);
-                loadingSpinner.ShowLoading();
+               
+                loadingSpinner.ShowDownloadingProgress("Fetching More Songs", 0);
             }
             else
             {
+
                 loadingSpinner.gameObject.SetActive(false);
             }
         }

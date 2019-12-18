@@ -10,10 +10,11 @@ using UnityEngine;
 using HMUI;
 using UnityEngine.UI;
 using TMPro;
+using BeatSaberMarkupLanguage.Notify;
 namespace BeatSaverDownloader.UI.ViewControllers
 {
 
-    public class SongDetailViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
+    public class SongDetailViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController, INotifiableHost
     {
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.songDetail.bsml";
 
@@ -39,6 +40,18 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private TextMeshProUGUI _obstaclesText;
         private TextMeshProUGUI _bombsText;
 
+        private bool downloadInteractable = false;
+        [UIValue("downloadInteractable")]
+        public bool DownloadInteractable
+        {
+            get => downloadInteractable;
+            set
+            {
+                downloadInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         [UIAction("#post-parse")]
         internal void Setup()
         {
@@ -48,6 +61,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
 
             SetupDetailView();
+        }
+        [UIAction("downloadPressed")]
+        internal void DownloadPressed()
+        {
+            MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong);
         }
         internal void ClearData()
         {
@@ -72,6 +90,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
                 _coverImage.texture = cover;
+            DownloadInteractable = !SongCore.Collections.songWithHashPresent(_currentSong.Hash.ToUpper());
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
         }

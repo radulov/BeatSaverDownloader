@@ -1,7 +1,9 @@
 ﻿<bg>
   <vertical>
   <page-button event-click='list#PageUp' direction='Up'></page-button>
-  <list id='list' expand-cell='true' select-cell='listSelect'></list>
+  <list id='list' expand-cell='true' select-cell='listSelect'>
+    <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal' move-to-center='true' size-delta-y='8' size-delta-x='32'></modal>
+  </list>
   <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
 </vertical>
 </bg>
