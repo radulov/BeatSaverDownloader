@@ -1,0 +1,7 @@
+﻿<bg>
+  <vertical>
+  <page-button event-click='list#PageUp' direction='Up'></page-button>
+  <list id='list' expand-cell='true' select-cell='listSelect'></list>
+  <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
+</vertical>
+</bg>

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using BS_Utils.Gameplay;
 using IPA;
-
+using BeatSaverDownloader.UI;
 namespace BeatSaverDownloader
 {
     public class Plugin : IBeatSaberPlugin
@@ -35,6 +35,8 @@ namespace BeatSaverDownloader
             PluginConfig.LoadConfig();
             Sprites.ConvertToSprites();
 
+            PluginUI.instance.Setup();
+            
            BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
         }
 
@@ -42,7 +44,8 @@ namespace BeatSaverDownloader
         {
             try
             {
-
+                Settings.SetupSettings();
+                SongCore.Loader.SongsLoadedEvent += Loader_SongsLoadedEvent;
                 GetUserInfo.GetUserName();
             }
             catch (Exception e)
@@ -51,6 +54,11 @@ namespace BeatSaverDownloader
             }
         }
 
+        private void Loader_SongsLoadedEvent(SongCore.Loader arg1, Dictionary<string, CustomPreviewBeatmapLevel> arg2)
+        {
+            if (!PluginUI.instance.moreSongsButton.Interactable)
+                PluginUI.instance.moreSongsButton.Interactable = true;
+        }
 
         public void OnUpdate()
         {
