@@ -30,7 +30,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
-            MoreSongsFlowCoordinator.didSelectSong.Invoke(_songs[row]);
+            MoreSongsFlowCoordinator.didSelectSong.Invoke(_songs[row], customListTableData.data[row].icon);
         }
         [UIAction("pageDownPressed")]
         internal void PageDownPressed()
@@ -72,6 +72,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("#post-parse")]
         internal async void SetupList()
         {
+
+            (transform as RectTransform).sizeDelta = new Vector2(70, 0);
+            (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
+            (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
+
             loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), gameObject.transform);
             customListTableData.data.Clear();
             // Add items here

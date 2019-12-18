@@ -13,7 +13,6 @@ namespace BeatSaverDownloader
     {
         public static Plugin instance;
         public static IPA.Logging.Logger log;
-
         public string UserAgent
         {
             get => $"BeatSaverDownloader/{Assembly.GetExecutingAssembly().GetName().Version}";
@@ -44,6 +43,7 @@ namespace BeatSaverDownloader
         {
             try
             {
+                PluginUI.SetupLevelDetailClone();
                 Settings.SetupSettings();
                 SongCore.Loader.SongsLoadedEvent += Loader_SongsLoadedEvent;
                 GetUserInfo.GetUserName();

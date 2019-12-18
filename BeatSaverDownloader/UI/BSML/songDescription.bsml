@@ -1,6 +1,8 @@
-﻿<vertical  vertical-fit="PreferredSize">
+﻿<vertical vertical-fit="PreferredSize">
   <horizontal anchor-min-y="1" anchor-pos-y="-6" bg='panel-top' pad-left='10' pad-right='10' horizontal-fit='PreferredSize'>
     <text text='Song Description' align='Center' font-size='10'></text>
   </horizontal>
-  <text-page text="~description"></text-page>
+  <horizontal pref-width='100' pref-height='65'>
+  <text-page id='songDescription' text=""></text-page>
+  </horizontal>
 </vertical>

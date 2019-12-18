@@ -7,6 +7,7 @@ using BeatSaberMarkupLanguage;
 using HMUI;
 using BeatSaverDownloader.UI.ViewControllers;
 using BS_Utils.Utilities;
+using UnityEngine;
 namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
@@ -14,7 +15,7 @@ namespace BeatSaverDownloader.UI
         private NavigationController _moreSongsNavigationcontroller;
         private MoreSongsListViewController _moreSongsView;
         private SongDetailViewController _songDetailView;
-        public static Action<BeatSaverSharp.Beatmap> didSelectSong;
+        public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         private SongDescriptionViewController _songDescriptionView;
         private DownloadQueueViewController _downloadQueueView;
         public void Awake()
@@ -39,6 +40,7 @@ namespace BeatSaverDownloader.UI
 
                     title = "More Songs";
                     showBackButton = true;
+
                     SetViewControllerToNavigationConctroller(_moreSongsNavigationcontroller, _moreSongsView);
                     ProvideInitialViewControllers(_moreSongsNavigationcontroller, _downloadQueueView);
                   //  PopViewControllerFromNavigationController(_moreSongsNavigationcontroller);
@@ -56,7 +58,7 @@ namespace BeatSaverDownloader.UI
             }
         }
 
-        internal void DidSelectSong(BeatSaverSharp.Beatmap song)
+        internal void DidSelectSong(BeatSaverSharp.Beatmap song, Texture2D cover = null)
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
@@ -66,7 +68,7 @@ namespace BeatSaverDownloader.UI
             }
             SetRightScreenViewController(_songDescriptionView);
             _songDescriptionView.Initialize(song);
-            _songDetailView.Initialize(song);
+            _songDetailView.Initialize(song, cover);
         }
 
         protected override void BackButtonWasPressed(ViewController topViewController)
