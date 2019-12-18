@@ -79,7 +79,9 @@ namespace BeatSaverDownloader.UI
         internal void DidPressDownload(BeatSaverSharp.Beatmap song)
         {
             Plugin.log.Info("Download pressed for song: " + song.Metadata.SongName);
+            Misc.SongDownloader.Instance.DownloadSong(song);
         }
+
         protected override void BackButtonWasPressed(ViewController topViewController)
         {
             // dismiss ourselves

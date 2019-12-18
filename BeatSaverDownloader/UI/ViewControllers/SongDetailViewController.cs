@@ -90,11 +90,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
                 _coverImage.texture = cover;
-            DownloadInteractable = !SongCore.Collections.songWithHashPresent(_currentSong.Hash.ToUpper());
+            UpdateDownloadButtonStatus();
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
         }
 
+        internal void UpdateDownloadButtonStatus()
+        {
+            DownloadInteractable = !SongCore.Collections.songWithHashPresent(_currentSong.Hash.ToUpper());
+        }
 
         protected override void DidDeactivate(DeactivationType deactivationType)
         {
