@@ -16,6 +16,7 @@ namespace BeatSaverDownloader.UI
 
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+        public static Action filterDidChange;
 
         public void Awake()
         {
@@ -28,8 +29,9 @@ namespace BeatSaverDownloader.UI
                 _songDescriptionView = BeatSaberUI.CreateViewController<SongDescriptionViewController>();
                 _downloadQueueView = BeatSaberUI.CreateViewController<DownloadQueueViewController>();
 
-                didSelectSong += DidSelectSong;
-                didPressDownload += DidPressDownload;
+                didSelectSong += HandleDidSelectSong;
+                didPressDownload += HandleDidPressDownload;
+                filterDidChange += HandleFilterDidChange;
             }
         }
 
@@ -56,7 +58,7 @@ namespace BeatSaverDownloader.UI
             }
         }
 
-        internal void DidSelectSong(BeatSaverSharp.Beatmap song, Texture2D cover = null)
+        internal void HandleDidSelectSong(BeatSaverSharp.Beatmap song, Texture2D cover = null)
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
@@ -69,7 +71,7 @@ namespace BeatSaverDownloader.UI
             _songDetailView.Initialize(song, cover);
         }
 
-        internal void DidPressDownload(BeatSaverSharp.Beatmap song, Texture2D cover)
+        internal void HandleDidPressDownload(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
             Plugin.log.Info("Download pressed for song: " + song.Metadata.SongName);
             //    Misc.SongDownloader.Instance.DownloadSong(song);
@@ -78,9 +80,19 @@ namespace BeatSaverDownloader.UI
             _downloadQueueView.EnqueueSong(song, cover);
         }
 
+        internal void HandleFilterDidChange()
+        {
+            if (_songDetailView.isInViewControllerHierarchy)
+            {
+                PopViewControllersFromNavigationController(_moreSongsNavigationcontroller, 1);
+            }
+            _songDetailView.ClearData();
+            _songDescriptionView.ClearData();
+        }
         protected override void BackButtonWasPressed(ViewController topViewController)
         {
-            // dismiss ourselves
+
+            _moreSongsView.parserParams?.EmitEvent("closeAllModals");
             var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
             mainFlow.InvokeMethod("DismissFlowCoordinator", this, null, false);
         }

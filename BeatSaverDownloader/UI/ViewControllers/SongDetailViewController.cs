@@ -77,6 +77,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 _obstaclesText.text = "--";
                 _bombsText.text = "--";
                 _songNameText.text = "--";
+                _coverImage.texture = Texture2D.blackTexture;
                 _diffSegmentedControl.SetTexts(new string[] { });
                 _characteristicSegmentedControl.SetData(new IconSegmentedControl.DataItem[] { });
             }
