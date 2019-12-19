@@ -16,6 +16,7 @@ namespace BeatSaverDownloader.UI
 
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+        public static Action<BeatSaverSharp.User> didPressUploader;
         public static Action filterDidChange;
 
         public void Awake()
@@ -32,6 +33,7 @@ namespace BeatSaverDownloader.UI
                 didSelectSong += HandleDidSelectSong;
                 didPressDownload += HandleDidPressDownload;
                 filterDidChange += HandleFilterDidChange;
+                didPressUploader += HandleDidPressUploader;
             }
         }
 
@@ -79,7 +81,11 @@ namespace BeatSaverDownloader.UI
             _songDetailView.UpdateDownloadButtonStatus();
             _downloadQueueView.EnqueueSong(song, cover);
         }
-
+        internal void HandleDidPressUploader(BeatSaverSharp.User uploader)
+        {
+            Plugin.log.Info("Uploader pressed for user: " + uploader.Username);
+            _moreSongsView.SortByUser(uploader);
+        }
         internal void HandleFilterDidChange()
         {
             if (_songDetailView.isInViewControllerHierarchy)

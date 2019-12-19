@@ -35,6 +35,17 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
 
+        private string _searchValue = "";
+        [UIValue("searchValue")]
+        public string SearchValue
+        {
+            get => _searchValue;
+            set
+            {
+                _searchValue = value;
+                NotifyPropertyChanged();
+            }
+        }
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
@@ -68,6 +79,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("searchPressed")]
         internal async void SearchPressed(string text)
         {
+            if (string.IsNullOrWhiteSpace(text)) return;
             //   Plugin.log.Info("Search Pressed: " + text);
             _currentSearch = text;
             _currentFilter = FilterMode.Search;
@@ -84,6 +96,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
             SetLoading(false);
         }
 
+        internal async void SortByUser(BeatSaverSharp.User user)
+        {
+            _currentUploader = user;
+            _currentFilter = FilterMode.BeatSaver;
+            _currentBeatSaverFilter = BeatSaverFilterOptions.Uploader;
+            ClearData();
+            MoreSongsFlowCoordinator.filterDidChange?.Invoke();
+            await GetNewPage(2);
+        }
         [UIAction("pageDownPressed")]
         internal async void PageDownPressed()
         {

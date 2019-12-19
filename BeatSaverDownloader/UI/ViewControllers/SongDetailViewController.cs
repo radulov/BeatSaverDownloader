@@ -36,19 +36,29 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private TextMeshProUGUI _obstaclesText;
         private TextMeshProUGUI _bombsText;
 
-        private bool downloadInteractable = false;
+        private bool _downloadInteractable = false;
 
         [UIValue("downloadInteractable")]
         public bool DownloadInteractable
         {
-            get => downloadInteractable;
+            get => _downloadInteractable;
             set
             {
-                downloadInteractable = value;
+                _downloadInteractable = value;
                 NotifyPropertyChanged();
             }
         }
-
+        private bool _uploadInteractable = true;
+        [UIValue("uploaderInteractable")]
+        public bool UploadInteractable
+        {
+            get => _uploadInteractable;
+            set
+            {
+                _uploadInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
         [UIAction("#post-parse")]
         internal void Setup()
         {
@@ -63,6 +73,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void DownloadPressed()
         {
             MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
+        }
+        [UIAction("uploaderPressed")]
+        internal void UploaderPressed()
+        {
+            MoreSongsFlowCoordinator.didPressUploader?.Invoke(_currentSong.Uploader);
         }
 
         internal void ClearData()
