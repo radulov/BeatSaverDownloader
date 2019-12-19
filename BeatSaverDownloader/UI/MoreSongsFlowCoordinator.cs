@@ -24,7 +24,7 @@ namespace BeatSaverDownloader.UI
                 _moreSongsView = BeatSaberUI.CreateViewController<MoreSongsListViewController>();
                 _songDetailView = BeatSaberUI.CreateViewController<SongDetailViewController>();
                 _moreSongsNavigationcontroller = BeatSaberUI.CreateViewController<NavigationController>();
-
+                _moreSongsView.navController = _moreSongsNavigationcontroller;
                 _songDescriptionView = BeatSaberUI.CreateViewController<SongDescriptionViewController>();
                 _downloadQueueView = BeatSaberUI.CreateViewController<DownloadQueueViewController>();
 

@@ -1,9 +1,17 @@
 ﻿<bg>
   <vertical>
-  <page-button event-click='list#PageUp' direction='Up'></page-button>
-  <list id='list' expand-cell='true' select-cell='listSelect'>
-    <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal' move-to-center='true' size-delta-y='12' size-delta-x='48'></modal>
-  </list>
-  <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
-</vertical>
+    <horizontal horizontal-fit="PreferredSize" vertical-fit="PreferredSize" anchor-min-x="0" anchor-max-x="0.5">
+      <button  pad="4" pref-height="5" text="Search" click-event="open-searchKeyboard" click-off-closes="true" ></button>
+      <modal-keyboard id="searchKeyboard" show-event="open-searchKeyboard" hide-event="close-searchKeyboard" clear-on-open="false" on-enter="searchPressed"></modal-keyboard>
+      <button  pad="4" pref-height="5" click-event="open-sortModal" text="Sort"></button>
+    <modal id="sortModal" show-event="open-sortModal" hide-event="close-sortModal" move-to-center="true" click-off-closes="true">
+      
+    </modal>
+    </horizontal>
+    <page-button event-click='list#PageUp' direction='Up'></page-button>
+    <list id='list' expand-cell='true' select-cell='listSelect'>
+      <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal' move-to-center='true' size-delta-y='12' size-delta-x='48'></modal>
+    </list>
+    <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
+  </vertical>
 </bg>
