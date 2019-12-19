@@ -3,6 +3,8 @@ using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.Notify;
 using BeatSaverDownloader.Misc;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -79,7 +81,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal BeatSaverSharp.Beatmap beatmap;
         private UnityEngine.UI.Image _bgImage;
         private float _downloadingProgess;
-
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         public event PropertyChangedEventHandler PropertyChanged;
 
         [UIComponent("coverImage")]
@@ -94,6 +96,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("abortClicked")]
         internal void AbortDownload()
         {
+            cancellationTokenSource.Cancel();
             DownloadQueueViewController.didAbortDownload?.Invoke(this);
         }
 
@@ -148,7 +151,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public async void Download()
         {
             queueState = SongQueueState.Downloading;
-            await SongDownloader.Instance.DownloadSong(beatmap, downloadProgress);
+            await SongDownloader.Instance.DownloadSong(beatmap, cancellationTokenSource.Token, downloadProgress);
             queueState = SongQueueState.Downloaded;
             DownloadQueueViewController.didFinishDownloadingItem?.Invoke(this);
         }

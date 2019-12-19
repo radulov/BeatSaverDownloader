@@ -6,15 +6,17 @@
       <button  pad="4" pref-height="5" click-event="open-sortModal" text="Sort"></button>
       <modal id="sortModal" show-event="open-sortModal" hide-event="close-sortModal, closeAllModals" move-to-center="true" size-delta-y='50' size-delta-x='70' click-off-closes="false">
         <vertical>
-        <page-button event-click='sortList#PageUp' pref-width='10' direction='Up'></page-button>
-        <list id="sortList" expand-cell="false" anchor-pos-x="-10" list-width="70" select-cell="sortSelect"></list>
-        <page-button event-click='sortList#PageDown' pref-width='10' direction='Down'></page-button>
-       </vertical>
+          <page-button event-click='sortList#PageUp' pref-width='10' direction='Up'></page-button>
+          <list id="sortList" expand-cell="false" anchor-pos-x="-10" list-width="70" select-cell="sortSelect"></list>
+          <page-button event-click='sortList#PageDown' pref-width='10' direction='Down'></page-button>
+        </vertical>
       </modal>
     </horizontal>
     <page-button event-click='list#PageUp' direction='Up'></page-button>
     <list id='list' expand-cell='true' select-cell='listSelect'>
-      <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal, closeAllModals' move-to-center='true' size-delta-y='12' size-delta-x='48'></modal>
+      <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal, closeAllModals' move-to-center='true' size-delta-y='30' size-delta-x='48'>
+        <button id='abortButton' on-click='abortClicked' text='Abort' anchor-pos-y='-24' pref-height='5' pad='4' ></button>
+      </modal>
     </list>
     <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
   </vertical>

@@ -94,7 +94,7 @@ namespace BeatSaverDownloader.UI
 
             _moreSongsView.parserParams?.EmitEvent("closeAllModals");
             var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
-            mainFlow.InvokeMethod("DismissFlowCoordinator", this, null, false);
+            mainFlow.DismissFlowCoordinator(this);
         }
     }
 }

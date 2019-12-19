@@ -50,7 +50,7 @@ namespace BeatSaverDownloader.Misc
             _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => x.levelID.Split('_')[2]?.ToUpper()));
         }
 
-        public async Task DownloadSong(BeatSaverSharp.Beatmap song, IProgress<double> progress = null, bool direct = false)
+        public async Task DownloadSong(BeatSaverSharp.Beatmap song, System.Threading.CancellationToken token, IProgress<double> progress = null, bool direct = false)
         {
             try
             {
@@ -59,14 +59,19 @@ namespace BeatSaverDownloader.Misc
                 {
                     Directory.CreateDirectory(customSongsPath);
                 }
-                var zip = await song.DownloadZip(direct, progress);
+                var zip = await song.DownloadZip(direct, token, progress);
                 Plugin.log.Info("Downloaded zip!");
                 await ExtractZipAsync(song, zip, customSongsPath);
                 songDownloaded?.Invoke(song);
             }
             catch (Exception e)
             {
-                Plugin.log.Critical("Failed to download Song!\n" + e);
+                if (e is TaskCanceledException)
+                    Plugin.log.Warn("Song Download Aborted.");
+                else
+                    Plugin.log.Critical("Failed to download Song!\n" + e);
+                if (_alreadyDownloadedSongs.Contains(song.Hash.ToUpper()))
+                    _alreadyDownloadedSongs.Remove(song.Hash.ToUpper());
             }
         }
 
