@@ -95,7 +95,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if(value)
             {
                 parserParams.EmitEvent("open-loadingModal");
-                loadingSpinner.ShowDownloadingProgress("Fetching More Songs", 0);
+                loadingSpinner.ShowText("Fetching More Songs...", false);
             }
             else
             {
