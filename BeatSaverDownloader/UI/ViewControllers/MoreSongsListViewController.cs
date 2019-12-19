@@ -21,7 +21,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private ScoreSaberFilterOptions _currentScoreSaberFilter = ScoreSaberFilterOptions.Trending;
         private BeatSaverSharp.User _currentUploader;
         private string _currentSearch;
-
+        private string _fetchingDetails = "";
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.moreSongsList.bsml";
         internal NavigationController navController;
         internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -125,15 +125,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         public void ProgressUpdate(double progress)
         {
-            SetLoading(true, progress);
+            SetLoading(true, progress, _fetchingDetails);
         }
 
-        public void SetLoading(bool value, double progress = 0)
+        public void SetLoading(bool value, double progress = 0, string details = "")
         {
             if (value)
             {
                 parserParams.EmitEvent("open-loadingModal");
-                loadingSpinner.ShowDownloadingProgress("Fetching More Songs...", (float)progress);
+                loadingSpinner.ShowDownloadingProgress("Fetching More Songs... " + details, (float)progress);
             }
             else
             {
@@ -187,6 +187,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             for (uint i = 0; i < count; ++i)
             {
+                _fetchingDetails = $"({i + 1}/{count})";
                 BeatSaverSharp.Page page = null;
                 switch (_currentBeatSaverFilter)
                 {
@@ -220,11 +221,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     customListTableData.tableView.ReloadData();
                 }
             }
+            _fetchingDetails = "";
         }
         internal async Task GetPagesSearch(uint count)
         {
             for (uint i = 0; i < count; ++i)
             {
+                _fetchingDetails = $"({i + 1}/{count})";
                 BeatSaverSharp.Page page = await BeatSaverSharp.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
                 if (page.Docs == null) continue;
                 lastPage++;
@@ -237,6 +240,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     customListTableData.tableView.ReloadData();
                 }
             }
+            _fetchingDetails = "";
 
         }
 
