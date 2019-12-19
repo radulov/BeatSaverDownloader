@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.MenuButtons;
-using BeatSaberMarkupLanguage;
-using UnityEngine;
 using HMUI;
+using System.Linq;
+using UnityEngine;
+
 namespace BeatSaverDownloader.UI
 {
     public class PluginUI : PersistentSingleton<PluginUI>
@@ -14,12 +11,13 @@ namespace BeatSaverDownloader.UI
         public MenuButton moreSongsButton;
         internal MoreSongsFlowCoordinator _moreSongsFlowCooridinator;
         public static GameObject _levelDetailClone;
+
         internal void Setup()
         {
             moreSongsButton = new MenuButton("More Songs", "Download More Songs from here!", MoreSongsButtonPressed, false);
             MenuButtons.instance.RegisterButton(moreSongsButton);
-            
         }
+
         internal static void SetupLevelDetailClone()
         {
             _levelDetailClone = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().First(x => x.name == "LevelDetail").gameObject);
@@ -40,10 +38,12 @@ namespace BeatSaverDownloader.UI
             Destroy(_levelDetailClone.transform.Find("Stats").Find("Highscore").gameObject);
             Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxRank").gameObject);
         }
+
         internal void MoreSongsButtonPressed()
         {
             ShowMoreSongsFlow();
         }
+
         internal void ShowMoreSongsFlow()
         {
             if (_moreSongsFlowCooridinator == null)

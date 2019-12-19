@@ -1,20 +1,21 @@
-﻿using System;
-using System.Reflection;
-using UnityEngine.SceneManagement;
-using BeatSaverDownloader.Misc;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using BeatSaverDownloader.Misc;
+using BeatSaverDownloader.UI;
 using BS_Utils.Gameplay;
 using IPA;
-using BeatSaverDownloader.UI;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine.SceneManagement;
+
 namespace BeatSaverDownloader
 {
     public enum SongQueueState { Queued, Downloading, Downloaded, Error };
+
     public class Plugin : IBeatSaberPlugin
     {
-
         public static Plugin instance;
         public static IPA.Logging.Logger log;
+
         public string UserAgent
         {
             get => $"BeatSaverDownloader/{Assembly.GetExecutingAssembly().GetName().Version}";
@@ -37,8 +38,8 @@ namespace BeatSaverDownloader
             Sprites.ConvertToSprites();
 
             PluginUI.instance.Setup();
-            
-           BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
+
+            BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
         }
 
         private void OnMenuSceneLoadedFresh()
@@ -64,7 +65,6 @@ namespace BeatSaverDownloader
 
         public void OnUpdate()
         {
-
         }
 
         public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)

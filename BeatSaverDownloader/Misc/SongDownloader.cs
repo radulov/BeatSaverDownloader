@@ -1,17 +1,11 @@
-﻿
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
-using Newtonsoft.Json.Linq;
+
 namespace BeatSaverDownloader.Misc
 {
     public class SongDownloader : MonoBehaviour
@@ -19,6 +13,7 @@ namespace BeatSaverDownloader.Misc
         public event Action<BeatSaverSharp.Beatmap> songDownloaded;
 
         private static SongDownloader _instance = null;
+
         public static SongDownloader Instance
         {
             get
@@ -33,7 +28,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-           private HashSet<string> _alreadyDownloadedSongs;
+        private HashSet<string> _alreadyDownloadedSongs;
         private static bool _extractingZip;
 
         public void Awake()
@@ -48,7 +43,6 @@ namespace BeatSaverDownloader.Misc
             {
                 SongLoader_SongsLoadedEvent(null, SongCore.Loader.CustomLevels);
             }
-
         }
 
         private void SongLoader_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
@@ -58,7 +52,6 @@ namespace BeatSaverDownloader.Misc
 
         public async Task DownloadSong(BeatSaverSharp.Beatmap song, IProgress<double> progress = null, bool direct = false)
         {
-
             try
             {
                 string customSongsPath = CustomLevelPathHelper.customLevelsDirectoryPath;
@@ -76,6 +69,7 @@ namespace BeatSaverDownloader.Misc
                 Plugin.log.Critical("Failed to download Song!\n" + e);
             }
         }
+
         private async Task ExtractZipAsync(BeatSaverSharp.Beatmap songInfo, byte[] zip, string customSongsPath, bool overwrite = false)
         {
             Stream zipStream = new MemoryStream(zip);
@@ -103,7 +97,6 @@ namespace BeatSaverDownloader.Misc
                         var entryPath = Path.Combine(path, entry.Name); // Name instead of FullName for better security and because song zips don't have nested directories anyway
                         if (overwrite || !File.Exists(entryPath)) // Either we're overwriting or there's no existing file
                             entry.ExtractToFile(entryPath, overwrite);
-
                     }
                 }).ConfigureAwait(false);
                 archive.Dispose();
@@ -122,7 +115,8 @@ namespace BeatSaverDownloader.Misc
             if (!Instance._alreadyDownloadedSongs.Contains(hash))
                 Instance._alreadyDownloadedSongs.Add(hash);
         }
-      public bool IsSongDownloaded(string hash)
+
+        public bool IsSongDownloaded(string hash)
         {
             return Instance._alreadyDownloadedSongs.Contains(hash.ToUpper());
         }

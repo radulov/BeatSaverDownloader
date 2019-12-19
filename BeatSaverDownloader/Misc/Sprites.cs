@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace BeatSaverDownloader.Misc
 {
-    class Sprites
+    internal class Sprites
     {
         public static Sprite AddToFavorites;
         public static Sprite RemoveFromFavorites;
@@ -18,6 +16,7 @@ namespace BeatSaverDownloader.Misc
 
         //by elliotttate#9942
         public static Sprite BeastSaberLogo;
+
         public static Sprite ReviewIcon;
 
         //https://www.flaticon.com/free-icon/thumbs-up_70420
@@ -37,7 +36,7 @@ namespace BeatSaverDownloader.Misc
 
         //https://www.flaticon.com/free-icon/media-play-symbol_31128
         public static Sprite PlayIcon;
-        
+
         //https://game-icons.net/1x1/delapouite/perspective-dice-six-faces-three.html
         public static Sprite RandomIcon;
 
@@ -48,21 +47,21 @@ namespace BeatSaverDownloader.Misc
         {
             Plugin.log.Info("Creating sprites...");
 
-            AddToFavorites =        LoadSpriteFromResources("BeatSaverDownloader.Assets.AddToFavorites.png");
-            RemoveFromFavorites =   LoadSpriteFromResources("BeatSaverDownloader.Assets.RemoveFromFavorites.png");
-            StarFull =              LoadSpriteFromResources("BeatSaverDownloader.Assets.StarFull.png");
-            StarEmpty =             LoadSpriteFromResources("BeatSaverDownloader.Assets.StarEmpty.png");
-            BeastSaberLogo =        LoadSpriteFromResources("BeatSaverDownloader.Assets.BeastSaberLogo.png");
-            ReviewIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.ReviewIcon.png");
-            ThumbUp =               LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbUp.png");
-            ThumbDown =             LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbDown.png");
-            PlaylistIcon =          LoadSpriteFromResources("BeatSaverDownloader.Assets.PlaylistIcon.png");
-            SongIcon =              LoadSpriteFromResources("BeatSaverDownloader.Assets.SongIcon.png");
-            DownloadIcon =          LoadSpriteFromResources("BeatSaverDownloader.Assets.DownloadIcon.png");
-            PlayIcon =              LoadSpriteFromResources("BeatSaverDownloader.Assets.PlayIcon.png");
-            DoubleArrow =           LoadSpriteFromResources("BeatSaverDownloader.Assets.DoubleArrow.png");
-            RandomIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.RandomIcon.png");
-            DeleteIcon =            LoadSpriteFromResources("BeatSaverDownloader.Assets.DeleteIcon.png");
+            AddToFavorites = LoadSpriteFromResources("BeatSaverDownloader.Assets.AddToFavorites.png");
+            RemoveFromFavorites = LoadSpriteFromResources("BeatSaverDownloader.Assets.RemoveFromFavorites.png");
+            StarFull = LoadSpriteFromResources("BeatSaverDownloader.Assets.StarFull.png");
+            StarEmpty = LoadSpriteFromResources("BeatSaverDownloader.Assets.StarEmpty.png");
+            BeastSaberLogo = LoadSpriteFromResources("BeatSaverDownloader.Assets.BeastSaberLogo.png");
+            ReviewIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.ReviewIcon.png");
+            ThumbUp = LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbUp.png");
+            ThumbDown = LoadSpriteFromResources("BeatSaverDownloader.Assets.ThumbDown.png");
+            PlaylistIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.PlaylistIcon.png");
+            SongIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.SongIcon.png");
+            DownloadIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.DownloadIcon.png");
+            PlayIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.PlayIcon.png");
+            DoubleArrow = LoadSpriteFromResources("BeatSaverDownloader.Assets.DoubleArrow.png");
+            RandomIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.RandomIcon.png");
+            DeleteIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.DeleteIcon.png");
 
             Plugin.log.Info("Creating sprites... Done!");
         }
@@ -91,13 +90,12 @@ namespace BeatSaverDownloader.Misc
                 return Tex2D;
             else
                 return null;
-        //    Texture2D texture = new Texture2D(0, 0, TextureFormat.ARGB32, false, true);
-        //    texture.hideFlags = HideFlags.HideAndDontSave;
-        //    texture.filterMode = FilterMode.Trilinear;
-        //    texture.LoadImage(imageData);
-        //    return texture;
+            //    Texture2D texture = new Texture2D(0, 0, TextureFormat.ARGB32, false, true);
+            //    texture.hideFlags = HideFlags.HideAndDontSave;
+            //    texture.filterMode = FilterMode.Trilinear;
+            //    texture.LoadImage(imageData);
+            //    return texture;
         }
-
 
         // Image helpers
 

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BeatSaberMarkupLanguage;
-using HMUI;
+﻿using BeatSaberMarkupLanguage;
 using BeatSaverDownloader.UI.ViewControllers;
-using BS_Utils.Utilities;
+using HMUI;
+using System;
 using UnityEngine;
+
 namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
@@ -20,6 +16,7 @@ namespace BeatSaverDownloader.UI
 
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+
         public void Awake()
         {
             if (_moreSongsView == null)
@@ -31,31 +28,27 @@ namespace BeatSaverDownloader.UI
                 _songDescriptionView = BeatSaberUI.CreateViewController<SongDescriptionViewController>();
                 _downloadQueueView = BeatSaberUI.CreateViewController<DownloadQueueViewController>();
 
-
                 didSelectSong += DidSelectSong;
                 didPressDownload += DidPressDownload;
             }
         }
+
         protected override void DidActivate(bool firstActivation, ActivationType activationType)
         {
             try
             {
                 if (firstActivation)
                 {
-
                     title = "More Songs";
                     showBackButton = true;
 
                     SetViewControllerToNavigationConctroller(_moreSongsNavigationcontroller, _moreSongsView);
                     ProvideInitialViewControllers(_moreSongsNavigationcontroller, _downloadQueueView);
-                  //  PopViewControllerFromNavigationController(_moreSongsNavigationcontroller);
-                    
+                    //  PopViewControllerFromNavigationController(_moreSongsNavigationcontroller);
                 }
                 if (activationType == ActivationType.AddedToHierarchy)
                 {
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -67,9 +60,9 @@ namespace BeatSaverDownloader.UI
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
-            if(!_songDetailView.isInViewControllerHierarchy)
+            if (!_songDetailView.isInViewControllerHierarchy)
             {
-            PushViewControllerToNavigationController(_moreSongsNavigationcontroller, _songDetailView);
+                PushViewControllerToNavigationController(_moreSongsNavigationcontroller, _songDetailView);
             }
             SetRightScreenViewController(_songDescriptionView);
             _songDescriptionView.Initialize(song);
@@ -93,4 +86,3 @@ namespace BeatSaverDownloader.UI
         }
     }
 }
-

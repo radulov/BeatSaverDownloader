@@ -1,16 +1,13 @@
-﻿using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
+﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
+using BeatSaberMarkupLanguage.Notify;
+using BeatSaverDownloader.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using UnityEngine;
-using BeatSaberMarkupLanguage.Notify;
-using BeatSaverDownloader.Misc;
 using TMPro;
+using UnityEngine;
+
 namespace BeatSaverDownloader.UI.ViewControllers
 {
     public class DownloadQueueViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
@@ -18,10 +15,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.downloadQueue.bsml";
         internal static Action<DownloadQueueItem> didAbortDownload;
         internal static Action<DownloadQueueItem> didFinishDownloadingItem;
+
         [UIValue("download-queue")]
         internal List<object> queueItems = new List<object>();
+
         [UIComponent("download-list")]
         private CustomCellListTableData _downloadList;
+
         protected override void DidDeactivate(DeactivationType deactivationType)
         {
             base.DidDeactivate(deactivationType);
@@ -36,6 +36,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             didAbortDownload += DownloadAborted;
             didFinishDownloadingItem += UpdateDownloadingState;
         }
+
         internal void EnqueueSong(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
             DownloadQueueItem queuedSong = new DownloadQueueItem(song, cover);
@@ -43,6 +44,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _downloadList?.tableView?.ReloadData();
             UpdateDownloadingState(queuedSong);
         }
+
         internal void UpdateDownloadingState(DownloadQueueItem item)
         {
             foreach (DownloadQueueItem inQueue in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Queued).ToArray())
@@ -58,6 +60,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if (queueItems.Count == 0)
                 SongCore.Loader.Instance.RefreshSongs(false);
         }
+
         internal void DownloadAborted(DownloadQueueItem download)
         {
             if (queueItems.Contains(download))
@@ -76,11 +79,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal BeatSaverSharp.Beatmap beatmap;
         private UnityEngine.UI.Image _bgImage;
         private float _downloadingProgess;
+
         public event PropertyChangedEventHandler PropertyChanged;
+
         [UIComponent("coverImage")]
         private UnityEngine.UI.RawImage _coverImage;
+
         [UIComponent("songNameText")]
         private TextMeshProUGUI _songNameText;
+
         [UIComponent("authorNameText")]
         private TextMeshProUGUI _authorNameText;
 
@@ -89,21 +96,23 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             DownloadQueueViewController.didAbortDownload?.Invoke(this);
         }
+
         private string _songName;
         private string _authorName;
         private Texture2D _coverTexture;
+
         public DownloadQueueItem()
         {
-
         }
+
         public DownloadQueueItem(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
             beatmap = song;
             _songName = song.Metadata.SongName;
             _coverTexture = cover;
             _authorName = $"{song.Metadata.SongAuthorName} <size=80%>[{song.Metadata.LevelAuthorName}]";
-
         }
+
         [UIAction("#post-parse")]
         internal void Setup()
         {
@@ -125,8 +134,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _bgImage.type = UnityEngine.UI.Image.Type.Filled;
             _bgImage.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
             _bgImage.fillAmount = 0;
-
         }
+
         internal void ProgressUpdate(double progress)
         {
             _downloadingProgess = (float)progress;
@@ -146,7 +155,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         public void Update()
         {
-
         }
     }
 }

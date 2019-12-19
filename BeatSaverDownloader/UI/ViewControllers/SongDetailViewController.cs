@@ -1,19 +1,15 @@
-﻿using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
-using BeatSaberMarkupLanguage.Components;
+﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Notify;
+using HMUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
-using HMUI;
-using UnityEngine.UI;
 using TMPro;
-using BeatSaberMarkupLanguage.Notify;
+using UnityEngine;
+using UnityEngine.UI;
+
 namespace BeatSaverDownloader.UI.ViewControllers
 {
-
     public class SongDetailViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController, INotifiableHost
     {
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.songDetail.bsml";
@@ -41,6 +37,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private TextMeshProUGUI _bombsText;
 
         private bool downloadInteractable = false;
+
         [UIValue("downloadInteractable")]
         public bool DownloadInteractable
         {
@@ -55,21 +52,22 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("#post-parse")]
         internal void Setup()
         {
-
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
 
             SetupDetailView();
         }
+
         [UIAction("downloadPressed")]
         internal void DownloadPressed()
         {
             MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
         }
+
         internal void ClearData()
         {
-            if(_detailViewSetup)
+            if (_detailViewSetup)
             {
                 //Clear all the data
                 _timeText.text = "--";
@@ -83,6 +81,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 _characteristicSegmentedControl.SetData(new IconSegmentedControl.DataItem[] { });
             }
         }
+
         internal void Initialize(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
             _currentSong = song;
@@ -115,8 +114,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 delegate (int value) { SelectedCharacteristic(_currentSong.Metadata.Characteristics[value]); });
 
             _difficultiesSegmentedControllerClone = _levelDetails.GetComponentInChildren<BeatmapDifficultySegmentedControlController>();
-            _diffSegmentedControl = CreateTextSegmentedControl(_difficultiesSegmentedControllerClone.transform as RectTransform, new Vector2(0, 0), new Vector2(0, 0), 
-                delegate(int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
+            _diffSegmentedControl = CreateTextSegmentedControl(_difficultiesSegmentedControllerClone.transform as RectTransform, new Vector2(0, 0), new Vector2(0, 0),
+                delegate (int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
 
             _songNameText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.name == "SongNameText");
             _coverImage = _levelDetails.transform.Find("Level").Find("CoverImage").GetComponent<RawImage>();
@@ -139,7 +138,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _levelDetails.gameObject.SetActive(true);
         }
 
-
         public void SelectedDifficulty(BeatSaverSharp.BeatmapCharacteristicDifficulty difficulty)
         {
             _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
@@ -148,14 +146,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _notesText.text = difficulty.Notes.ToString();
             _obstaclesText.text = difficulty.Obstacles.ToString();
             _bombsText.text = difficulty.Bombs.ToString();
-
         }
+
         public void SelectedCharacteristic(BeatSaverSharp.BeatmapCharacteristic characteristic)
         {
             _selectedCharacteristic = characteristic;
             if (_diffSegmentedControl != null)
                 SetupDifficultyDisplay();
-
         }
 
         internal void SetupDifficultyDisplay()
@@ -164,11 +161,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
             List<string> diffNames = new List<string>(_selectedCharacteristic.Difficulties.Keys.Where(x => _selectedCharacteristic.Difficulties[x].HasValue)).OrderBy(x => DiffOrder(x)).ToList();
             foreach (var diff in diffNames)
             {
-                if(_selectedCharacteristic.Difficulties[diff].HasValue)
-                diffs.Add(_selectedCharacteristic.Difficulties[diff].Value);
+                if (_selectedCharacteristic.Difficulties[diff].HasValue)
+                    diffs.Add(_selectedCharacteristic.Difficulties[diff].Value);
             }
 
-           for(int i = 0; i < diffNames.Count; ++i)
+            for (int i = 0; i < diffNames.Count; ++i)
             {
                 diffNames[i] = ToDifficultyName(diffNames[i]);
             }
@@ -183,7 +180,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 SelectedDifficulty(_currentDifficulties[0]);
         }
 
-        void SetupCharacteristicDisplay()
+        private void SetupCharacteristicDisplay()
         {
             List<IconSegmentedControl.DataItem> characteristics = new List<IconSegmentedControl.DataItem>();
             foreach (var c in _currentSong.Metadata.Characteristics)
@@ -199,6 +196,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             _characteristicSegmentedControl.SetData(characteristics.ToArray());
         }
+
         internal static string ToDifficultyName(string name)
         {
             if (name == "easy")
@@ -214,24 +212,31 @@ namespace BeatSaverDownloader.UI.ViewControllers
             else
                 return "--";
         }
+
         internal static int DiffOrder(string name)
         {
             switch (name)
             {
                 case "easy":
                     return 0;
+
                 case "normal":
                     return 1;
+
                 case "hard":
                     return 2;
+
                 case "expert":
                     return 3;
+
                 case "expertPlus":
                     return 4;
+
                 default:
                     return 5;
             }
         }
+
         public static TextSegmentedControl CreateTextSegmentedControl(RectTransform parent, Vector2 anchoredPosition, Vector2 sizeDelta, Action<int> onValueChanged = null, float fontSize = 4f, float padding = 8f)
         {
             var segmentedControl = new GameObject("CustomTextSegmentedControl", typeof(RectTransform)).AddComponent<TextSegmentedControl>();

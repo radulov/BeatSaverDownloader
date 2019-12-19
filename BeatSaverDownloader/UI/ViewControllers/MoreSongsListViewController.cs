@@ -1,42 +1,45 @@
-﻿using HMUI;
-using IPA.Utilities;
-using System.Linq;
-using TMPro;
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
+﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
+using HMUI;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
 namespace BeatSaverDownloader.UI.ViewControllers
 {
     public class MoreSongsListViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
     {
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.moreSongsList.bsml";
+
         [UIParams]
-        BeatSaberMarkupLanguage.Parser.BSMLParserParams parserParams;
+        private BeatSaberMarkupLanguage.Parser.BSMLParserParams parserParams;
+
         [UIComponent("list")]
         public CustomListTableData customListTableData;
+
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
 
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
+
         public bool Working
         {
             get { return _working; }
             set { _working = value; if (!loadingSpinner) return; SetLoading(value); }
         }
+
         private bool _working;
-        uint lastPage = 0;
+        private uint lastPage = 0;
 
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
             MoreSongsFlowCoordinator.didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
+
         [UIAction("pageDownPressed")]
         internal void PageDownPressed()
         {
@@ -46,9 +49,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
             {
                 GetNewPage();
             }
-
-
         }
+
         internal async void GetNewPage(uint count = 1)
         {
             if (Working) return;
@@ -70,6 +72,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             Working = false;
         }
+
         protected override void DidDeactivate(DeactivationType deactivationType)
         {
             base.DidDeactivate(deactivationType);
@@ -78,7 +81,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("#post-parse")]
         internal async void SetupList()
         {
-
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
@@ -89,13 +91,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
             GetNewPage(2);
             // customListTableData.tableView.ScrollToCellWithIdx(InitialItem, HMUI.TableViewScroller.ScrollPositionType.Beginning, false);
             // customListTableData.tableView.SelectCellWithIdx(InitialItem);
-
         }
 
         public void ProgressUpdate(double progress)
         {
             SetLoading(true, progress);
         }
+
         public void SetLoading(bool value, double progress = 0)
         {
             if (value)
@@ -110,4 +112,3 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
     }
 }
-
