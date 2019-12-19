@@ -65,7 +65,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("downloadPressed")]
         internal void DownloadPressed()
         {
-            MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong);
+            MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
         }
         internal void ClearData()
         {

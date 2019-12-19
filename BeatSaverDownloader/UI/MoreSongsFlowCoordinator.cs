@@ -19,7 +19,7 @@ namespace BeatSaverDownloader.UI
         private DownloadQueueViewController _downloadQueueView;
 
         public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
-        public static Action<BeatSaverSharp.Beatmap> didPressDownload;
+        public static Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
         public void Awake()
         {
             if (_moreSongsView == null)
@@ -76,10 +76,11 @@ namespace BeatSaverDownloader.UI
             _songDetailView.Initialize(song, cover);
         }
 
-        internal void DidPressDownload(BeatSaverSharp.Beatmap song)
+        internal void DidPressDownload(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
             Plugin.log.Info("Download pressed for song: " + song.Metadata.SongName);
-            Misc.SongDownloader.Instance.DownloadSong(song);
+            //    Misc.SongDownloader.Instance.DownloadSong(song);
+            _downloadQueueView.EnqueueSong(song, cover);
         }
 
         protected override void BackButtonWasPressed(ViewController topViewController)
