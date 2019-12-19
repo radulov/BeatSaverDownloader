@@ -33,7 +33,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-        //   private List<Song> _alreadyDownloadedSongs;
+           private HashSet<string> _alreadyDownloadedSongs;
         private static bool _extractingZip;
 
         public void Awake()
@@ -53,10 +53,10 @@ namespace BeatSaverDownloader.Misc
 
         private void SongLoader_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
         {
-            //      _alreadyDownloadedSongs = levels.Values.Select(x => new Song(x)).ToList();
+            _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => x.levelID.Split('_')[2]?.ToUpper()));
         }
 
-        public async void DownloadSong(BeatSaverSharp.Beatmap song)
+        public async Task DownloadSong(BeatSaverSharp.Beatmap song, IProgress<double> progress = null, bool direct = false)
         {
 
             try
@@ -66,7 +66,7 @@ namespace BeatSaverDownloader.Misc
                 {
                     Directory.CreateDirectory(customSongsPath);
                 }
-                var zip = await song.DownloadZip();
+                var zip = await song.DownloadZip(direct, progress);
                 Plugin.log.Info("Downloaded zip!");
                 await ExtractZipAsync(song, zip, customSongsPath);
                 songDownloaded?.Invoke(song);
@@ -117,6 +117,14 @@ namespace BeatSaverDownloader.Misc
             zipStream.Close();
         }
 
-
+        public void QueuedDownload(string hash)
+        {
+            if (!Instance._alreadyDownloadedSongs.Contains(hash))
+                Instance._alreadyDownloadedSongs.Add(hash);
+        }
+      public bool IsSongDownloaded(string hash)
+        {
+            return Instance._alreadyDownloadedSongs.Contains(hash.ToUpper());
+        }
     }
 }

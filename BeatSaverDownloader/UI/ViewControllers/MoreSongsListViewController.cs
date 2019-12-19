@@ -20,8 +20,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public CustomListTableData customListTableData;
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
+
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
+        internal Progress<Double> fetchProgress;
         public bool Working
         {
             get { return _working; }
@@ -29,7 +31,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         private bool _working;
         uint lastPage = 0;
-
 
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
@@ -55,7 +56,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             Working = true;
             for (uint i = 0; i < count; ++i)
             {
-                var songs = await BeatSaverSharp.BeatSaver.Latest(lastPage);
+                var songs = await BeatSaverSharp.BeatSaver.Latest(lastPage, fetchProgress);
                 lastPage++;
                 _songs.AddRange(songs.Docs);
                 foreach (var song in songs.Docs)
@@ -83,6 +84,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
             loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
             customListTableData.data.Clear();
+            fetchProgress = new Progress<double>(ProgressUpdate);
             // Add items here
             GetNewPage(2);
             // customListTableData.tableView.ScrollToCellWithIdx(InitialItem, HMUI.TableViewScroller.ScrollPositionType.Beginning, false);
@@ -90,12 +92,16 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         }
 
-        public void SetLoading(bool value)
+        public void ProgressUpdate(double progress)
         {
-            if(value)
+            SetLoading(true, progress);
+        }
+        public void SetLoading(bool value, double progress = 0)
+        {
+            if (value)
             {
                 parserParams.EmitEvent("open-loadingModal");
-                loadingSpinner.ShowText("Fetching More Songs...", false);
+                loadingSpinner.ShowDownloadingProgress("Fetching More Songs...", (float)progress);
             }
             else
             {

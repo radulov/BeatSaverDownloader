@@ -9,8 +9,10 @@ using IPA;
 using BeatSaverDownloader.UI;
 namespace BeatSaverDownloader
 {
+    public enum SongQueueState { Queued, Downloading, Downloaded, Error };
     public class Plugin : IBeatSaberPlugin
     {
+
         public static Plugin instance;
         public static IPA.Logging.Logger log;
         public string UserAgent

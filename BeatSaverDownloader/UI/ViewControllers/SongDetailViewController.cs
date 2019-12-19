@@ -97,7 +97,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         internal void UpdateDownloadButtonStatus()
         {
-            DownloadInteractable = !SongCore.Collections.songWithHashPresent(_currentSong.Hash.ToUpper());
+            DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash.ToUpper());
         }
 
         protected override void DidDeactivate(DeactivationType deactivationType)

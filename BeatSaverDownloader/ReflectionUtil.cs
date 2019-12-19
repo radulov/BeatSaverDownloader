@@ -141,7 +141,6 @@ namespace BeatSaverDownloader
             }
             catch (Exception)
             {
-
             }
 
             copy.enabled = false;
@@ -195,5 +194,4 @@ namespace BeatSaverDownloader
             }
         }
     }
-
 }

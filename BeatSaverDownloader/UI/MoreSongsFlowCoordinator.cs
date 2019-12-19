@@ -80,6 +80,8 @@ namespace BeatSaverDownloader.UI
         {
             Plugin.log.Info("Download pressed for song: " + song.Metadata.SongName);
             //    Misc.SongDownloader.Instance.DownloadSong(song);
+            Misc.SongDownloader.Instance.QueuedDownload(song.Hash.ToUpper());
+            _songDetailView.UpdateDownloadButtonStatus();
             _downloadQueueView.EnqueueSong(song, cover);
         }
 
