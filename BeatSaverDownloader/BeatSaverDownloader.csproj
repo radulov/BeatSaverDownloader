@@ -180,6 +180,10 @@
   <ItemGroup>
     <EmbeddedResource Include="UI\BSML\songDetail.bsml" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\BeatSaver.png" />
+    <EmbeddedResource Include="Assets\ScoreSaber.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "BeatSaverDownloader.dll" "C:\Program Files (x86)\Steam\steamapps\common\Beat Saber\Plugins"</PostBuildEvent>

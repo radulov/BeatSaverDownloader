@@ -43,6 +43,9 @@ namespace BeatSaverDownloader.Misc
         //https://www.flaticon.com/free-icon/waste-bin_70388
         public static Sprite DeleteIcon;
 
+        public static Sprite BeatSaverIcon;
+        public static Sprite ScoreSaberIcon;
+
         public static void ConvertToSprites()
         {
             Plugin.log.Info("Creating sprites...");
@@ -62,6 +65,8 @@ namespace BeatSaverDownloader.Misc
             DoubleArrow = LoadSpriteFromResources("BeatSaverDownloader.Assets.DoubleArrow.png");
             RandomIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.RandomIcon.png");
             DeleteIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.DeleteIcon.png");
+            BeatSaverIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.BeatSaver.png");
+            ScoreSaberIcon = LoadSpriteFromResources("BeatSaverDownloader.Assets.ScoreSaber.png");
 
             Plugin.log.Info("Creating sprites... Done!");
         }
