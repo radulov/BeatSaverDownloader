@@ -14,7 +14,7 @@ namespace BeatSaverDownloader.UI
 
         public static void SetupSettings()
         {
-            BSMLSettings.instance.AddSettingsMenu("BeatSaver Downloader", "BeatSaverDownloader.UI.BSML.settings.bsml", instance);
+      //      BSMLSettings.instance.AddSettingsMenu("BeatSaverDownloader", "BeatSaverDownloader.UI.BSML.settings.bsml", instance);
         }
     }
 }
