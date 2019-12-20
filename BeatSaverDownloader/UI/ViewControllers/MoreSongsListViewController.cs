@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 using BeatSaverDownloader.Misc;
@@ -215,6 +216,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         internal async Task GetPagesBeatSaver(uint count)
         {
+            List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
             for (uint i = 0; i < count; ++i)
             {
                 _fetchingDetails = $"({i + 1}/{count})";
@@ -242,33 +244,36 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 }
                 if (page.Docs == null) continue;
                 lastPage++;
-                _songs.AddRange(page.Docs);
-                foreach (var song in page.Docs)
-                {
-                    byte[] image = await song.FetchCoverImage();
-                    Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
-                    customListTableData.data.Add(new CustomListTableData.CustomCellInfo(song.Name, song.Uploader.Username, icon));
-                    customListTableData.tableView.ReloadData();
-                }
+                newMaps.AddRange(page.Docs);
+            }
+            _songs.AddRange(newMaps);
+            foreach (var song in newMaps)
+            {
+          //      byte[] image = await song.FetchCoverImage();
+          //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+                customListTableData.data.Add(new SongCustomCellInfo(song, customListTableData.tableView.ReloadData, song.Name, song.Uploader.Username));
+                customListTableData.tableView.ReloadData();
             }
             _fetchingDetails = "";
         }
         internal async Task GetPagesSearch(uint count)
         {
+            List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
             for (uint i = 0; i < count; ++i)
             {
                 _fetchingDetails = $"({i + 1}/{count})";
                 BeatSaverSharp.Page page = await BeatSaverSharp.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
                 if (page.Docs == null) continue;
                 lastPage++;
-                _songs.AddRange(page.Docs);
-                foreach (var song in page.Docs)
-                {
-                    byte[] image = await song.FetchCoverImage();
-                    Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
-                    customListTableData.data.Add(new CustomListTableData.CustomCellInfo(song.Name, song.Uploader.Username, icon));
-                    customListTableData.tableView.ReloadData();
-                }
+                newMaps.AddRange(page.Docs);
+            }
+            _songs.AddRange(newMaps);
+            foreach (var song in newMaps)
+            {
+                //      byte[] image = await song.FetchCoverImage();
+                //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+                customListTableData.data.Add(new SongCustomCellInfo(song, customListTableData.tableView.ReloadData, song.Name, song.Uploader.Username));
+                customListTableData.tableView.ReloadData();
             }
             _fetchingDetails = "";
 
@@ -294,6 +299,24 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public SortFilterCellInfo(SortFilter filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
         {
             sortFilter = filter;
+        }
+    }
+    public class SongCustomCellInfo : CustomListTableData.CustomCellInfo
+    {
+        private BeatSaverSharp.Beatmap _song;
+        Action _callback;
+        public  SongCustomCellInfo(BeatSaverSharp.Beatmap song, Action callback, string text, string subtext = null) : base(text, subtext, null)
+        {
+            _song = song;
+            _callback = callback;
+            LoadImageCoroutine();
+        }
+        private async Task LoadImageCoroutine()
+        {
+             byte[] image = await _song.FetchCoverImage();
+            Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+            base.icon = icon;
+            _callback();
         }
     }
 }
