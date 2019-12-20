@@ -9,7 +9,7 @@ using System.Collections;
 using System.Linq;
 using UnityEngine;
 using BeatSaverDownloader.Misc;
-
+using TMPro;
 namespace BeatSaverDownloader.UI.ViewControllers
 {
     public class MoreSongsListViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
@@ -79,7 +79,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentScoreSaberFilter = filter.ScoreSaberOption;
             ClearData();
             filterDidChange?.Invoke();
-            await GetNewPage(2);
+            await GetNewPage(3);
         }
         [UIAction("searchPressed")]
         internal async void SearchPressed(string text)
@@ -90,7 +90,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentFilter = FilterMode.Search;
             ClearData();
             filterDidChange?.Invoke();
-            await GetNewPage(2);
+            await GetNewPage(3);
         }
         [UIAction("abortClicked")]
         internal void AbortPageFetch()
@@ -108,7 +108,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentBeatSaverFilter = BeatSaverFilterOptions.Uploader;
             ClearData();
             filterDidChange?.Invoke();
-            await GetNewPage(2);
+            await GetNewPage(3);
         }
         [UIAction("pageDownPressed")]
         internal async void PageDownPressed()
@@ -117,7 +117,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if (!(customListTableData.data.Count >= 1)) return;
             if ((customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx) <= 7)
             {
-                await GetNewPage(2);
+                await GetNewPage(4);
             }
         }
 
@@ -145,7 +145,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             customListTableData.data.Clear();
             fetchProgress = new Progress<double>(ProgressUpdate);
             SetupSortOptions();
-            await GetNewPage(2);
+            await GetNewPage(3);
 
         }
 
@@ -251,7 +251,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             {
           //      byte[] image = await song.FetchCoverImage();
           //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
-                customListTableData.data.Add(new SongCustomCellInfo(song, customListTableData.tableView.ReloadData, song.Name, song.Uploader.Username));
+                customListTableData.data.Add(new SongCustomCellInfo(song, CellDidSetImage, song.Name, song.Uploader.Username));
                 customListTableData.tableView.ReloadData();
             }
             _fetchingDetails = "";
@@ -272,11 +272,24 @@ namespace BeatSaverDownloader.UI.ViewControllers
             {
                 //      byte[] image = await song.FetchCoverImage();
                 //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
-                customListTableData.data.Add(new SongCustomCellInfo(song, customListTableData.tableView.ReloadData, song.Name, song.Uploader.Username));
+                customListTableData.data.Add(new SongCustomCellInfo(song, CellDidSetImage, song.Name, song.Uploader.Username));
                 customListTableData.tableView.ReloadData();
             }
             _fetchingDetails = "";
 
+        }
+        internal void CellDidSetImage(SongCustomCellInfo cell)
+        {
+            foreach(var visibleCell in customListTableData.tableView.visibleCells)
+            {
+                LevelListTableCell levelCell = visibleCell as LevelListTableCell;
+                if (levelCell.GetField<TextMeshProUGUI>("_songNameText")?.text == cell.text)
+                {
+                    customListTableData.tableView.RefreshCellsContent();
+                    return;
+                }
+
+            }
         }
 
     }
@@ -304,19 +317,19 @@ namespace BeatSaverDownloader.UI.ViewControllers
     public class SongCustomCellInfo : CustomListTableData.CustomCellInfo
     {
         private BeatSaverSharp.Beatmap _song;
-        Action _callback;
-        public  SongCustomCellInfo(BeatSaverSharp.Beatmap song, Action callback, string text, string subtext = null) : base(text, subtext, null)
+        Action<SongCustomCellInfo> _callback;
+        public  SongCustomCellInfo(BeatSaverSharp.Beatmap song, Action<SongCustomCellInfo> callback, string text, string subtext = null) : base(text, subtext, null)
         {
             _song = song;
             _callback = callback;
             LoadImageCoroutine();
         }
-        private async Task LoadImageCoroutine()
+        private async void LoadImageCoroutine()
         {
              byte[] image = await _song.FetchCoverImage();
             Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
             base.icon = icon;
-            _callback();
+            _callback(this);
         }
     }
 }
