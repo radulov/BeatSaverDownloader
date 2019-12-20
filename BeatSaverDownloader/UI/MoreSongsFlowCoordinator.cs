@@ -98,7 +98,7 @@ namespace BeatSaverDownloader.UI
         protected override void BackButtonWasPressed(ViewController topViewController)
         {
 
-            _moreSongsView.parserParams?.EmitEvent("closeAllModals");
+            _moreSongsView.Cleanup();
             var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
             mainFlow.DismissFlowCoordinator(this);
         }

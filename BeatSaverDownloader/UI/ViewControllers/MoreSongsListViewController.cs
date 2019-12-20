@@ -175,6 +175,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
             sortListTableData.tableView.ReloadData();
 
         }
+        public void Cleanup()
+        {
+            AbortPageFetch();
+            parserParams.EmitEvent("closeAllModals");
+        }
         internal async Task GetNewPage(uint count = 1)
         {
             if (Working) return;

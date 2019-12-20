@@ -29,12 +29,10 @@ namespace BeatSaverDownloader.Misc
             //       pack.SetPrivateField("_coverImage", packCover ?? Sprites.BeastSaberLogo);
             //       pack.SetPrivateField("_packID", string.IsNullOrEmpty(packID) ? "" : packID);
             //       pack.SetPrivateField("_isPackAlwaysOwned", true);
-
             return pack;
         }
 
         private static char[] hexChars = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         public static string CheckHex(string input)
         {
             input = input.ToUpper();

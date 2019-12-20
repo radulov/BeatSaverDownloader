@@ -59,9 +59,9 @@ namespace BeatSaverDownloader.Misc
                 {
                     Directory.CreateDirectory(customSongsPath);
                 }
-                var zip = await song.DownloadZip(direct, token, progress);
+                var zip = await song.DownloadZip(direct, token, progress).ConfigureAwait(false); 
                 Plugin.log.Info("Downloaded zip!");
-                await ExtractZipAsync(song, zip, customSongsPath);
+                await ExtractZipAsync(song, zip, customSongsPath).ConfigureAwait(false);
                 songDownloaded?.Invoke(song);
             }
             catch (Exception e)
