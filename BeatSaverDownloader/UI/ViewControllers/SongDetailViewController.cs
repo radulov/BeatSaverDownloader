@@ -37,6 +37,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private TextMeshProUGUI _bombsText;
 
         private bool _downloadInteractable = false;
+        
+        public Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+        public Action<BeatSaverSharp.User> didPressUploader;
 
         [UIValue("downloadInteractable")]
         public bool DownloadInteractable
@@ -62,6 +65,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("#post-parse")]
         internal void Setup()
         {
+            Console.WriteLine("AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
@@ -72,12 +76,12 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("downloadPressed")]
         internal void DownloadPressed()
         {
-            MoreSongsFlowCoordinator.didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
+            didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
         }
         [UIAction("uploaderPressed")]
         internal void UploaderPressed()
         {
-            MoreSongsFlowCoordinator.didPressUploader?.Invoke(_currentSong.Uploader);
+            didPressUploader?.Invoke(_currentSong.Uploader);
         }
 
         internal void ClearData()

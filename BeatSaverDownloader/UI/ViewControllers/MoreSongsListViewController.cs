@@ -49,6 +49,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
+        
+        public Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
+        public Action filterDidChange;
 
         public bool Working
         {
@@ -62,7 +65,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
-            MoreSongsFlowCoordinator.didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
+            didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
         [UIAction("sortSelect")]
         internal async void SelectedSortOption(TableView tableView, int row)
@@ -73,7 +76,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentBeatSaverFilter = filter.BeatSaverOption;
             _currentScoreSaberFilter = filter.ScoreSaberOption;
             ClearData();
-            MoreSongsFlowCoordinator.filterDidChange?.Invoke();
+            filterDidChange?.Invoke();
             await GetNewPage(2);
         }
         [UIAction("searchPressed")]
@@ -84,7 +87,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentSearch = text;
             _currentFilter = FilterMode.Search;
             ClearData();
-            MoreSongsFlowCoordinator.filterDidChange?.Invoke();
+            filterDidChange?.Invoke();
             await GetNewPage(2);
         }
         [UIAction("abortClicked")]
@@ -102,7 +105,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _currentFilter = FilterMode.BeatSaver;
             _currentBeatSaverFilter = BeatSaverFilterOptions.Uploader;
             ClearData();
-            MoreSongsFlowCoordinator.filterDidChange?.Invoke();
+            filterDidChange?.Invoke();
             await GetNewPage(2);
         }
         [UIAction("pageDownPressed")]

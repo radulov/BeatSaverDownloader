@@ -14,11 +14,6 @@ namespace BeatSaverDownloader.UI
         private SongDescriptionViewController _songDescriptionView;
         private DownloadQueueViewController _downloadQueueView;
 
-        public static Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
-        public static Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
-        public static Action<BeatSaverSharp.User> didPressUploader;
-        public static Action filterDidChange;
-
         public void Awake()
         {
             if (_moreSongsView == null)
@@ -30,10 +25,10 @@ namespace BeatSaverDownloader.UI
                 _songDescriptionView = BeatSaberUI.CreateViewController<SongDescriptionViewController>();
                 _downloadQueueView = BeatSaberUI.CreateViewController<DownloadQueueViewController>();
 
-                didSelectSong += HandleDidSelectSong;
-                didPressDownload += HandleDidPressDownload;
-                filterDidChange += HandleFilterDidChange;
-                didPressUploader += HandleDidPressUploader;
+                _moreSongsView.didSelectSong += HandleDidSelectSong;
+                _moreSongsView.filterDidChange += HandleFilterDidChange;
+                _songDetailView.didPressDownload += HandleDidPressDownload;
+                _songDetailView.didPressUploader += HandleDidPressUploader;
             }
         }
 
