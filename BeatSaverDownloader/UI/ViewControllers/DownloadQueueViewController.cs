@@ -51,7 +51,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             foreach (DownloadQueueItem inQueue in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Queued).ToArray())
             {
-                if (Misc.PluginConfig.maxSimultaneousDownloads >= queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Downloading).ToArray().Length)
+                if (Misc.PluginConfig.maxSimultaneousDownloads > queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Downloading).ToArray().Length)
                     inQueue.Download();
             }
             foreach (DownloadQueueItem downloaded in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Downloaded).ToArray())
