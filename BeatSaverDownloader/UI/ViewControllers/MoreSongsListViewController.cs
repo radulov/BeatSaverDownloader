@@ -51,7 +51,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
-        
+
         public Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         public Action filterDidChange;
 
@@ -63,7 +63,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         private bool _working;
         private uint lastPage = 0;
-
+        private bool _endOfResults = false;
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
@@ -114,7 +114,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal async void PageDownPressed()
         {
             //Plugin.log.Info($"Number of cells {7}  visible cell last idx {customListTableData.tableView.visibleCells.Last().idx}  count {customListTableData.data.Count()}   math {customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx})");
-            if (!(customListTableData.data.Count >= 1)) return;
+            if (!(customListTableData.data.Count >= 1) || _endOfResults) return;
             if ((customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx) <= 7)
             {
                 await GetNewPage(4);
@@ -188,6 +188,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal async Task GetNewPage(uint count = 1)
         {
             if (Working) return;
+            _endOfResults = false;
             Plugin.log.Info($"Fetching {count} new page(s)");
             Working = true;
             try
@@ -242,15 +243,19 @@ namespace BeatSaverDownloader.UI.ViewControllers
                         page = await BeatSaverSharp.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                 }
-                if (page.Docs == null) continue;
                 lastPage++;
+                if (page.TotalDocs == 0 || page.NextPage == null)
+                {
+                    _endOfResults = true;
+                }
                 newMaps.AddRange(page.Docs);
+                if (_endOfResults) break;
             }
             _songs.AddRange(newMaps);
             foreach (var song in newMaps)
             {
-          //      byte[] image = await song.FetchCoverImage();
-          //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+                //      byte[] image = await song.FetchCoverImage();
+                //      Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
                 customListTableData.data.Add(new SongCustomCellInfo(song, CellDidSetImage, song.Name, song.Uploader.Username));
                 customListTableData.tableView.ReloadData();
             }
@@ -263,9 +268,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
             {
                 _fetchingDetails = $"({i + 1}/{count})";
                 BeatSaverSharp.Page page = await BeatSaverSharp.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
-                if (page.Docs == null) continue;
                 lastPage++;
+                if (page.TotalDocs == 0 || page.NextPage == null)
+                {
+                    _endOfResults = true;
+                }
                 newMaps.AddRange(page.Docs);
+                if (_endOfResults) break;
             }
             _songs.AddRange(newMaps);
             foreach (var song in newMaps)
@@ -280,7 +289,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         internal void CellDidSetImage(SongCustomCellInfo cell)
         {
-            foreach(var visibleCell in customListTableData.tableView.visibleCells)
+            foreach (var visibleCell in customListTableData.tableView.visibleCells)
             {
                 LevelListTableCell levelCell = visibleCell as LevelListTableCell;
                 if (levelCell.GetField<TextMeshProUGUI>("_songNameText")?.text == cell.text)
@@ -318,7 +327,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
     {
         private BeatSaverSharp.Beatmap _song;
         Action<SongCustomCellInfo> _callback;
-        public  SongCustomCellInfo(BeatSaverSharp.Beatmap song, Action<SongCustomCellInfo> callback, string text, string subtext = null) : base(text, subtext, null)
+        public SongCustomCellInfo(BeatSaverSharp.Beatmap song, Action<SongCustomCellInfo> callback, string text, string subtext = null) : base(text, subtext, null)
         {
             _song = song;
             _callback = callback;
@@ -326,7 +335,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         private async void LoadImageCoroutine()
         {
-             byte[] image = await _song.FetchCoverImage();
+            byte[] image = await _song.FetchCoverImage();
             Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
             base.icon = icon;
             _callback(this);
