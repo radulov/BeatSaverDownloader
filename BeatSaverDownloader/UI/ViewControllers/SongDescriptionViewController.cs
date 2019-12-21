@@ -20,9 +20,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 songDescription.SetText("");
         }
 
-        internal void Initialize(BeatSaverSharp.Beatmap song)
+        internal void Initialize(string description)
         {
-            songDescription.SetText(song.Description);
+            songDescription.SetText(description);
         }
 
         [UIAction("#post-parse")]

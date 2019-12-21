@@ -51,12 +51,20 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs)
         {
 
-            foreach (var pair in songs)
+            for (int i = 0; i < songs.Length; i++)
             {
-                bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == pair.Item1);
-                bool downloaded = SongDownloader.Instance.IsSongDownloaded(pair.Item1.Hash);
-                if (!inQueue & !downloaded) EnqueueSong(pair.Item1, pair.Item2);
-                await Task.Run(() => { Thread.Sleep(0); });
+                bool downloaded = false;
+                Tuple<BeatSaverSharp.Beatmap, Texture2D> pair = songs[i];
+                BeatSaverSharp.Beatmap map = pair.Item1;
+                if (map.Hash.StartsWith("scoresaber"))
+                {
+                    downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash.Split('_')[1]);
+                    if (downloaded) continue;
+                    map = await BeatSaverSharp.BeatSaver.Hash(map.Hash.Split('_')[1]);
+                }
+                bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == map);
+                downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash);
+                if (!inQueue & !downloaded) EnqueueSong(map, pair.Item2);
             }
         }
         internal void UpdateDownloadingState(DownloadQueueItem item)

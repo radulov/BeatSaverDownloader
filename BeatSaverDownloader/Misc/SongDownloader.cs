@@ -87,17 +87,17 @@ namespace BeatSaverDownloader.Misc
                 string basePath = songInfo.Key + " (" + songInfo.Metadata.SongName + " - " + songInfo.Metadata.LevelAuthorName + ")";
                 basePath = string.Join("", basePath.Split((Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).ToArray())));
                 string path = customSongsPath + "/" + basePath;
-
                 if (!overwrite && Directory.Exists(path))
                 {
                     int pathNum = 1;
                     while (Directory.Exists(path + $" ({pathNum})")) ++pathNum;
                     path += $" ({pathNum})";
                 }
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
                 Plugin.log.Info(path);
                 await Task.Run(() =>
                 {
-                    archive.ExtractToDirectory(path);
                     foreach (var entry in archive.Entries)
                     {
                         var entryPath = Path.Combine(path, entry.Name); // Name instead of FullName for better security and because song zips don't have nested directories anyway

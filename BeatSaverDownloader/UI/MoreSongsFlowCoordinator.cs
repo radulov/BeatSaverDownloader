@@ -3,7 +3,7 @@ using BeatSaverDownloader.UI.ViewControllers;
 using HMUI;
 using System;
 using UnityEngine;
-
+using System.Runtime.CompilerServices;
 namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
@@ -32,6 +32,7 @@ namespace BeatSaverDownloader.UI
                 _moreSongsView.multiSelectDidChange += HandleMultiSelectDidChange;
                 _songDetailView.didPressDownload += HandleDidPressDownload;
                 _songDetailView.didPressUploader += HandleDidPressUploader;
+                _songDetailView.setDescription += _songDescriptionView.Initialize;
                 _multiSelectDetailView.multiSelectClearPressed += _moreSongsView.MultiSelectClear;
                 _multiSelectDetailView.multiSelectDownloadPressed += HandleMultiSelectDownload;
             }
@@ -60,7 +61,7 @@ namespace BeatSaverDownloader.UI
             }
         }
 
-        internal void HandleDidSelectSong(BeatSaverSharp.Beatmap song, Texture2D cover = null)
+        internal void HandleDidSelectSong(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover = null)
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
@@ -71,7 +72,6 @@ namespace BeatSaverDownloader.UI
                     PushViewControllerToNavigationController(_moreSongsNavigationcontroller, _songDetailView);
                 }
                 SetRightScreenViewController(_songDescriptionView);
-                _songDescriptionView.Initialize(song);
                 _songDetailView.Initialize(song, cover);
             }
             else

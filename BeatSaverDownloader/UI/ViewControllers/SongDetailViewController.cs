@@ -3,6 +3,7 @@ using BeatSaberMarkupLanguage.Notify;
 using HMUI;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -40,7 +41,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         
         public Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
         public Action<BeatSaverSharp.User> didPressUploader;
-
+        public Action<string> setDescription;
         [UIValue("downloadInteractable")]
         public bool DownloadInteractable
         {
@@ -51,14 +52,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 NotifyPropertyChanged();
             }
         }
-        private bool _uploadInteractable = true;
+        private bool _uploaderInteractable = true;
         [UIValue("uploaderInteractable")]
-        public bool UploadInteractable
+        public bool UploaderInteractable
         {
-            get => _uploadInteractable;
+            get => _uploaderInteractable;
             set
             {
-                _uploadInteractable = value;
+                _uploaderInteractable = value;
                 NotifyPropertyChanged();
             }
         }
@@ -76,6 +77,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void DownloadPressed()
         {
             didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
+            DownloadInteractable = false;
         }
         [UIAction("uploaderPressed")]
         internal void UploaderPressed()
@@ -98,24 +100,31 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 _coverImage.texture = Texture2D.blackTexture;
                 _diffSegmentedControl.SetTexts(new string[] { });
                 _characteristicSegmentedControl.SetData(new IconSegmentedControl.DataItem[] { });
+                DownloadInteractable = false;
+                UploaderInteractable = false;
             }
         }
 
-        internal void Initialize(BeatSaverSharp.Beatmap song, Texture2D cover)
+        internal async void Initialize(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover)
         {
-            _currentSong = song;
+            if (song.Value.Hash.StartsWith("scoresaber"))
+                song.Value = await BeatSaverSharp.BeatSaver.Hash(song.Value.Hash.Split('_')[1]);
 
+                _currentSong = song.Value;
+            
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
                 _coverImage.texture = cover;
             UpdateDownloadButtonStatus();
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
+            UploaderInteractable = true;
+            setDescription?.Invoke(_currentSong.Description);
         }
 
         internal void UpdateDownloadButtonStatus()
         {
-            DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash.ToUpper());
+            DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash);
         }
 
         protected override void DidDeactivate(DeactivationType deactivationType)
