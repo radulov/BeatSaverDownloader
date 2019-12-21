@@ -93,7 +93,7 @@ namespace BeatSaverDownloader.UI
         }
         internal void HandleMultiSelectDownload()
         {
-            _downloadQueueView.EnqueueSongs(_moreSongsView._multiSelectSongs.ToArray());
+            _downloadQueueView.EnqueueSongs(_moreSongsView._multiSelectSongs.ToArray(), _downloadQueueView.cancellationTokenSource.Token);
             _moreSongsView.MultiSelectClear();
         }
         internal void HandleMultiSelectDidChange()
@@ -134,6 +134,7 @@ namespace BeatSaverDownloader.UI
                 PopViewControllersFromNavigationController(_moreSongsNavigationcontroller, 1, null, true);
             }
             _moreSongsView.Cleanup();
+            _downloadQueueView.AbortAllDownloads();
             var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
             mainFlow.DismissFlowCoordinator(this);
         }

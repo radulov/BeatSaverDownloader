@@ -20,7 +20,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal static Action<DownloadQueueItem> didFinishDownloadingItem;
         [UIValue("download-queue")]
         internal List<object> queueItems = new List<object>();
-
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         [UIComponent("download-list")]
         private CustomCellListTableData _downloadList;
 
@@ -47,12 +47,23 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _downloadList?.tableView?.ReloadData();
             UpdateDownloadingState(queuedSong);
         }
-
-        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs)
+        internal void AbortAllDownloads()
+        {
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = new CancellationTokenSource();
+            foreach (DownloadQueueItem item in queueItems.ToArray())
+            {
+                item.AbortDownload();
+            }
+        }
+        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs, CancellationToken cancellationToken)
         {
 
             for (int i = 0; i < songs.Length; i++)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
                 bool downloaded = false;
                 Tuple<BeatSaverSharp.Beatmap, Texture2D> pair = songs[i];
                 BeatSaverSharp.Beatmap map = pair.Item1;
