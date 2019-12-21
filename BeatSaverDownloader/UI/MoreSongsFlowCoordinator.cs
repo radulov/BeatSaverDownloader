@@ -93,7 +93,7 @@ namespace BeatSaverDownloader.UI
         }
         internal void HandleMultiSelectDownload()
         {
-            _downloadQueueView.EnqueueSongs(_moreSongsView._multiSelectSongs);
+            _downloadQueueView.EnqueueSongs(_moreSongsView._multiSelectSongs.ToArray());
             _moreSongsView.MultiSelectClear();
         }
         internal void HandleMultiSelectDidChange()

@@ -105,7 +105,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void Select(TableView tableView, int row)
         {
             if (MultiSelectEnabled)
-                _multiSelectSongs.Add(_songs[row], customListTableData.data[row].icon);
+                if (!_multiSelectSongs.Any(x => x.Item1 == _songs[row]))
+                    _multiSelectSongs.Add(_songs[row], customListTableData.data[row].icon);
             didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
         [UIAction("sortSelect")]
@@ -296,8 +297,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 {
                     _endOfResults = true;
                 }
-                if(page.Docs != null)
-                newMaps.AddRange(page.Docs);
+                if (page.Docs != null)
+                    newMaps.AddRange(page.Docs);
                 if (_endOfResults) break;
             }
             _songs.AddRange(newMaps);

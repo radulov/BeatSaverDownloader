@@ -5,6 +5,7 @@ using BeatSaverDownloader.Misc;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -17,7 +18,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public override string ResourceName => "BeatSaverDownloader.UI.BSML.downloadQueue.bsml";
         internal static Action<DownloadQueueItem> didAbortDownload;
         internal static Action<DownloadQueueItem> didFinishDownloadingItem;
-
         [UIValue("download-queue")]
         internal List<object> queueItems = new List<object>();
 
@@ -47,13 +47,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _downloadList?.tableView?.ReloadData();
             UpdateDownloadingState(queuedSong);
         }
-        internal void EnqueueSongs(List<Tuple<BeatSaverSharp.Beatmap, Texture2D>> songs)
+        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs)
         {
-            foreach(var pair in songs)
+
+            foreach (var pair in songs)
             {
                 bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == pair.Item1);
                 bool downloaded = SongDownloader.Instance.IsSongDownloaded(pair.Item1.Hash);
                 if (!inQueue & !downloaded) EnqueueSong(pair.Item1, pair.Item2);
+                await Task.Run(() => {  });
             }
         }
         internal void UpdateDownloadingState(DownloadQueueItem item)
