@@ -1,9 +1,10 @@
 ﻿<bg>
   <vertical>
     <horizontal horizontal-fit="PreferredSize" vertical-fit="PreferredSize" spacing="2" anchor-min-x="0" anchor-max-x="0.5">
-      <button  pad="4" pref-height="5" pref-width="20" text="Search" click-event="open-searchKeyboard" click-off-closes="true" ></button>
+      <button  id="multiSelectButton" pad="4" pref-height="5" pref-width="15" text="M-S" on-click="multiSelectToggle"></button>
+      <button  id="searchButton" pad="4" pref-height="5" pref-width="20" text="Search" click-event="open-searchKeyboard" ></button>
       <modal-keyboard id="searchKeyboard" value="searchValue" show-event="open-searchKeyboard" hide-event="close-searchKeyboard,closeAllModals" clear-on-open="false" on-enter="searchPressed"></modal-keyboard>
-      <button  pad="4" pref-height="5" pref-width="20" click-event="open-sortModal" text="Sort"></button>
+      <button id="sortButton" pad="4" pref-height="5" pref-width="20" click-event="open-sortModal" text="Sort"></button>
       <modal id="sortModal" show-event="open-sortModal" hide-event="close-sortModal,closeAllModals" move-to-center="true" size-delta-y='50' size-delta-x='70' click-off-closes="true">
         <vertical>
           <page-button event-click='sortList#PageUp' pref-width='14' direction='Up'></page-button>

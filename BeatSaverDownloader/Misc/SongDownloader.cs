@@ -47,7 +47,8 @@ namespace BeatSaverDownloader.Misc
 
         private void SongLoader_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
         {
-            _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => x.levelID.Split('_')[2]?.ToUpper()));
+            Plugin.log.Debug("Establishing Already Downloaded Songs");
+            _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => SongCore.Collections.hashForLevelID(x.levelID)));
         }
 
         public async Task DownloadSong(BeatSaverSharp.Beatmap song, System.Threading.CancellationToken token, IProgress<double> progress = null, bool direct = false)
@@ -69,7 +70,7 @@ namespace BeatSaverDownloader.Misc
                 if (e is TaskCanceledException)
                     Plugin.log.Warn("Song Download Aborted.");
                 else
-                    Plugin.log.Critical("Failed to download Song!\n" + e);
+                    Plugin.log.Critical("Failed to download Song!");
                 if (_alreadyDownloadedSongs.Contains(song.Hash.ToUpper()))
                     _alreadyDownloadedSongs.Remove(song.Hash.ToUpper());
             }

@@ -43,10 +43,19 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             DownloadQueueItem queuedSong = new DownloadQueueItem(song, cover);
             queueItems.Add(queuedSong);
+            Misc.SongDownloader.Instance.QueuedDownload(song.Hash.ToUpper());
             _downloadList?.tableView?.ReloadData();
             UpdateDownloadingState(queuedSong);
         }
-
+        internal void EnqueueSongs(List<Tuple<BeatSaverSharp.Beatmap, Texture2D>> songs)
+        {
+            foreach(var pair in songs)
+            {
+                bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == pair.Item1);
+                bool downloaded = SongDownloader.Instance.IsSongDownloaded(pair.Item1.Hash);
+                if (!inQueue & !downloaded) EnqueueSong(pair.Item1, pair.Item2);
+            }
+        }
         internal void UpdateDownloadingState(DownloadQueueItem item)
         {
             foreach (DownloadQueueItem inQueue in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Queued).ToArray())

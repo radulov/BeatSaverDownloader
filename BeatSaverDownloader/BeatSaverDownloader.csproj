@@ -143,6 +143,7 @@
     <Compile Include="UI\Settings.cs" />
     <Compile Include="UI\ViewControllers\MoreSongsListViewController.cs" />
     <Compile Include="UI\ViewControllers\DownloadQueueViewController.cs" />
+    <Compile Include="UI\ViewControllers\MultiSelectDetailViewController.cs" />
     <Compile Include="UI\ViewControllers\SongDescriptionViewController.cs" />
     <Compile Include="UI\ViewControllers\SongDetailViewController.cs" />
   </ItemGroup>
@@ -183,6 +184,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Assets\BeatSaver.png" />
     <EmbeddedResource Include="Assets\ScoreSaber.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UI\BSML\multiSelectDetailView.bsml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

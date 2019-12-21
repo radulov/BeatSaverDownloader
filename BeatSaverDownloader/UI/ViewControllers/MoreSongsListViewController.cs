@@ -36,6 +36,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public CustomListTableData sortListTableData;
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
+        [UIComponent("sortButton")]
+        private UnityEngine.UI.Button _sortButton;
+        [UIComponent("searchButton")]
+        private UnityEngine.UI.Button _searchButton;
 
         private string _searchValue = "";
         [UIValue("searchValue")]
@@ -48,13 +52,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 NotifyPropertyChanged();
             }
         }
-        public List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
+        private List<BeatSaverSharp.Beatmap> _songs = new List<BeatSaverSharp.Beatmap>();
+        public List<Tuple<BeatSaverSharp.Beatmap, Texture2D>> _multiSelectSongs = new List<Tuple<BeatSaverSharp.Beatmap, Texture2D>>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
 
         public Action<BeatSaverSharp.Beatmap, Texture2D> didSelectSong;
         public Action filterDidChange;
-
+        public Action multiSelectDidChange;
         public bool Working
         {
             get { return _working; }
@@ -64,9 +69,43 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private bool _working;
         private uint lastPage = 0;
         private bool _endOfResults = false;
+        private bool _multiSelectEnabled = false;
+        internal bool MultiSelectEnabled
+        {
+            get => _multiSelectEnabled;
+            set
+            {
+                _multiSelectEnabled = value;
+                ToggleMultiSelect(value);
+            }
+        }
+        internal void ToggleMultiSelect(bool value)
+        {
+            MultiSelectClear();
+            if (value)
+            {
+                customListTableData.tableView.selectionType = TableViewSelectionType.Multiple;
+                _sortButton.interactable = false;
+                _searchButton.interactable = false;
+            }
+            else
+            {
+                _sortButton.interactable = true;
+                _searchButton.interactable = true;
+                customListTableData.tableView.selectionType = TableViewSelectionType.Single;
+            }
+
+        }
+        internal void MultiSelectClear()
+        {
+            customListTableData.tableView.ClearSelection();
+            _multiSelectSongs.Clear();
+        }
         [UIAction("listSelect")]
         internal void Select(TableView tableView, int row)
         {
+            if (MultiSelectEnabled)
+                _multiSelectSongs.Add(_songs[row], customListTableData.data[row].icon);
             didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
         [UIAction("sortSelect")]
@@ -91,6 +130,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
             ClearData();
             filterDidChange?.Invoke();
             await GetNewPage(3);
+
+        }
+        [UIAction("multiSelectToggle")]
+        internal void ToggleMultiSelect()
+        {
+            MultiSelectEnabled = !MultiSelectEnabled;
+            multiSelectDidChange?.Invoke();
         }
         [UIAction("abortClicked")]
         internal void AbortPageFetch()
@@ -114,7 +160,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal async void PageDownPressed()
         {
             //Plugin.log.Info($"Number of cells {7}  visible cell last idx {customListTableData.tableView.visibleCells.Last().idx}  count {customListTableData.data.Count()}   math {customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx})");
-            if (!(customListTableData.data.Count >= 1) || _endOfResults) return;
+            if (!(customListTableData.data.Count >= 1) || _endOfResults || _multiSelectEnabled) return;
             if ((customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx) <= 7)
             {
                 await GetNewPage(4);
@@ -128,6 +174,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             customListTableData.tableView.ReloadData();
             customListTableData.tableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
             _songs.Clear();
+            _multiSelectSongs.Clear();
         }
         protected override void DidDeactivate(DeactivationType deactivationType)
         {
@@ -184,6 +231,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             AbortPageFetch();
             parserParams.EmitEvent("closeAllModals");
+            ClearData();
         }
         internal async Task GetNewPage(uint count = 1)
         {
@@ -248,6 +296,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 {
                     _endOfResults = true;
                 }
+                if(page.Docs != null)
                 newMaps.AddRange(page.Docs);
                 if (_endOfResults) break;
             }
@@ -273,7 +322,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 {
                     _endOfResults = true;
                 }
-                newMaps.AddRange(page.Docs);
+                if (page.Docs != null)
+                    newMaps.AddRange(page.Docs);
                 if (_endOfResults) break;
             }
             _songs.AddRange(newMaps);
