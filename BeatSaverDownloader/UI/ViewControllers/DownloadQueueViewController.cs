@@ -47,6 +47,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _downloadList?.tableView?.ReloadData();
             UpdateDownloadingState(queuedSong);
         }
+
         internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs)
         {
 

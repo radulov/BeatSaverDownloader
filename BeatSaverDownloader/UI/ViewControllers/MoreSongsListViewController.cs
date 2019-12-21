@@ -182,21 +182,33 @@ namespace BeatSaverDownloader.UI.ViewControllers
             base.DidDeactivate(deactivationType);
         }
 
+        protected override void DidActivate(bool firstActivation, ActivationType type)
+        {
+            base.DidActivate(firstActivation, type);
+            if (!firstActivation)
+            {
+                InitSongList();
+            }
+        }
+
         [UIAction("#post-parse")]
-        internal async void SetupList()
+        internal void SetupList()
         {
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
             loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
             Destroy(loadingSpinner.GetComponent<Touchable>());
-            customListTableData.data.Clear();
             fetchProgress = new Progress<double>(ProgressUpdate);
             SetupSortOptions();
-            await GetNewPage(3);
+            InitSongList();
 
         }
 
+        internal async void InitSongList()
+        {
+            await GetNewPage(3);
+        }
         public void ProgressUpdate(double progress)
         {
             SetLoading(true, progress, _fetchingDetails);
