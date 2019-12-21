@@ -44,7 +44,7 @@ namespace BeatSaverDownloader.UI
             {
                 if (firstActivation)
                 {
-                    title = "More Songs";
+                    UpdateTitle();
                     showBackButton = true;
 
                     SetViewControllerToNavigationConctroller(_moreSongsNavigationcontroller, _moreSongsView);
@@ -60,7 +60,19 @@ namespace BeatSaverDownloader.UI
                 Plugin.log.Error(ex);
             }
         }
-
+        internal void UpdateTitle()
+        {
+            title = $"{_moreSongsView._currentFilter}";
+            switch(_moreSongsView._currentFilter)
+            {
+                case MoreSongsListViewController.FilterMode.BeatSaver:
+                    title += $" - {_moreSongsView._currentBeatSaverFilter}";
+                    break;
+                case MoreSongsListViewController.FilterMode.ScoreSaber:
+                    title += $" - {_moreSongsView._currentScoreSaberFilter}";
+                    break;
+            }
+        }
         internal void HandleDidSelectSong(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover = null)
         {
             _songDetailView.ClearData();
@@ -120,6 +132,7 @@ namespace BeatSaverDownloader.UI
         }
         internal void HandleFilterDidChange()
         {
+            UpdateTitle();
             if (_songDetailView.isInViewControllerHierarchy)
             {
                 PopViewControllersFromNavigationController(_moreSongsNavigationcontroller, 1);

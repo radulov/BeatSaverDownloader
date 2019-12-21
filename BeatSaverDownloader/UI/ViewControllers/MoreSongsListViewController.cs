@@ -19,10 +19,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public enum BeatSaverFilterOptions { Latest, Hot, Rating, Downloads, Plays, Uploader }
         public enum ScoreSaberFilterOptions { Trending, Ranked, Difficulty, Qualified, Loved, Plays }
 
-        private FilterMode _currentFilter = FilterMode.ScoreSaber;
+        internal FilterMode _currentFilter = FilterMode.ScoreSaber;
         private FilterMode _previousFilter = FilterMode.ScoreSaber;
-        private BeatSaverFilterOptions _currentBeatSaverFilter = BeatSaverFilterOptions.Hot;
-        private ScoreSaberFilterOptions _currentScoreSaberFilter = ScoreSaberFilterOptions.Trending;
+        internal BeatSaverFilterOptions _currentBeatSaverFilter = BeatSaverFilterOptions.Hot;
+        internal ScoreSaberFilterOptions _currentScoreSaberFilter = ScoreSaberFilterOptions.Trending;
         private BeatSaverSharp.User _currentUploader;
         private string _currentSearch;
         private string _fetchingDetails = "";
