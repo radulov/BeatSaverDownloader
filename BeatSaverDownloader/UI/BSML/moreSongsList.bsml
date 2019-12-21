@@ -20,7 +20,7 @@
         </vertical>
       </modal>
     </horizontal>
-    <page-button event-click='list#PageUp' direction='Up'></page-button>
+    <page-button event-click='list#PageUp' on-click='pageUpPressed' direction='Up'></page-button>
     <list id='list' expand-cell='true' select-cell='listSelect'>
       <modal id='loadingModal' show-event='open-loadingModal' hide-event='close-loadingModal,closeAllModals' move-to-center='true' size-delta-y='30' size-delta-x='48'>
         <button id='abortButton' on-click='abortClicked' text='Abort' anchor-pos-y='-24' pref-height='5' pad='4' ></button>
