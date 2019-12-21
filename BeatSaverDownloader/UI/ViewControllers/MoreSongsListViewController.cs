@@ -122,7 +122,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         */
         [UIAction("sortPressed")]
-        internal void SortPRessed()
+        internal void SortPressed()
         {
             sourceListTableData.tableView.ClearSelection();
             sortListTableData.tableView.ClearSelection();
