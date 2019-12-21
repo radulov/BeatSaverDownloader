@@ -40,10 +40,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public CustomListTableData sourceListTableData;
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
+        [UIComponent("sortModal")]
+        public ModalView sortModal;
         [UIComponent("sortButton")]
         private UnityEngine.UI.Button _sortButton;
         [UIComponent("searchButton")]
         private UnityEngine.UI.Button _searchButton;
+        [UIComponent("searchKeyboard")]
+        private ModalKeyboard _searchKeyboard;
 
         private string _searchValue = "";
         [UIValue("searchValue")]
@@ -113,14 +117,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     _multiSelectSongs.Add(_songs[row].Value, customListTableData.data[row].icon);
             didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
-        /*
-        [UIAction("close-sortModal")]
+
         internal void SortClosed()
         {
             Plugin.log.Info("Sort modal closed");
             _currentFilter = _previousFilter;
         }
-        */
+
         [UIAction("sortPressed")]
         internal void SortPressed()
         {
@@ -230,10 +233,12 @@ namespace BeatSaverDownloader.UI.ViewControllers
             Destroy(loadingSpinner.GetComponent<Touchable>());
             fetchProgress = new Progress<double>(ProgressUpdate);
             SetupSourceOptions();
+            sortModal._blockerClickedEvent += SortClosed;
+            KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
+            _searchKeyboard.keyboard.keys.Add(keyKey);
             InitSongList();
 
         }
-
         internal async void InitSongList()
         {
             await GetNewPage(3);
@@ -265,7 +270,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public void SetupSortOptions()
         {
             sortListTableData.data.Clear();
-            switch(_currentFilter)
+            switch (_currentFilter)
             {
                 case FilterMode.BeatSaver:
                     sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon.texture));
@@ -416,6 +421,20 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         internal async Task GetPagesSearch(uint count)
         {
+            if (_currentSearch.StartsWith("Key:"))
+            {
+                string key = _currentSearch.Split(':')[1];
+                _fetchingDetails = $" (By Key:{key}";
+                BeatSaverSharp.Beatmap keyMap = await BeatSaverSharp.BeatSaver.Key(key, fetchProgress);
+                if (keyMap != null)
+                {
+                    _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(keyMap));
+                    customListTableData.data.Add(new BeatSaverCustomSongCellInfo(keyMap, CellDidSetImage, keyMap.Name, keyMap.Uploader.Username));
+                    customListTableData.tableView.ReloadData();
+                }
+                _fetchingDetails = "";
+                return;
+            }
             List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
             for (uint i = 0; i < count; ++i)
             {
