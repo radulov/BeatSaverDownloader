@@ -17,9 +17,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
     {
         public enum FilterMode { Search, BeatSaver, ScoreSaber }
         public enum BeatSaverFilterOptions { Latest, Hot, Rating, Downloads, Plays, Uploader }
-        public enum ScoreSaberFilterOptions { Trending, RecentlyRanked, Difficulty, Qualified, Loved, Plays }
+        public enum ScoreSaberFilterOptions { Trending, Ranked, Difficulty, Qualified, Loved, Plays }
 
         private FilterMode _currentFilter = FilterMode.ScoreSaber;
+        private FilterMode _previousFilter = FilterMode.ScoreSaber;
         private BeatSaverFilterOptions _currentBeatSaverFilter = BeatSaverFilterOptions.Hot;
         private ScoreSaberFilterOptions _currentScoreSaberFilter = ScoreSaberFilterOptions.Trending;
         private BeatSaverSharp.User _currentUploader;
@@ -35,6 +36,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public CustomListTableData customListTableData;
         [UIComponent("sortList")]
         public CustomListTableData sortListTableData;
+        [UIComponent("sourceList")]
+        public CustomListTableData sourceListTableData;
         [UIComponent("loadingModal")]
         public ModalView loadingModal;
         [UIComponent("sortButton")]
@@ -110,17 +113,42 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     _multiSelectSongs.Add(_songs[row].Value, customListTableData.data[row].icon);
             didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
+        /*
+        [UIAction("close-sortModal")]
+        internal void SortClosed()
+        {
+            Plugin.log.Info("Sort modal closed");
+            _currentFilter = _previousFilter;
+        }
+        */
+        [UIAction("sortPressed")]
+        internal void SortPRessed()
+        {
+            sourceListTableData.tableView.ClearSelection();
+            sortListTableData.tableView.ClearSelection();
+        }
         [UIAction("sortSelect")]
         internal async void SelectedSortOption(TableView tableView, int row)
         {
-            parserParams.EmitEvent("close-sortModal");
             SortFilter filter = (sortListTableData.data[row] as SortFilterCellInfo).sortFilter;
             _currentFilter = filter.Mode;
+            _previousFilter = filter.Mode;
             _currentBeatSaverFilter = filter.BeatSaverOption;
             _currentScoreSaberFilter = filter.ScoreSaberOption;
+            parserParams.EmitEvent("close-sortModal");
             ClearData();
             filterDidChange?.Invoke();
             await GetNewPage(3);
+        }
+        [UIAction("sourceSelect")]
+        internal void SelectedSource(TableView tableView, int row)
+        {
+            parserParams.EmitEvent("close-sourceModal");
+            FilterMode filter = (sourceListTableData.data[row] as SourceCellInfo).filter;
+            _previousFilter = _currentFilter;
+            _currentFilter = filter;
+            SetupSortOptions();
+            parserParams.EmitEvent("open-sortModal");
         }
         [UIAction("searchPressed")]
         internal async void SearchPressed(string text)
@@ -201,7 +229,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
             Destroy(loadingSpinner.GetComponent<Touchable>());
             fetchProgress = new Progress<double>(ProgressUpdate);
-            SetupSortOptions();
+            SetupSourceOptions();
             InitSongList();
 
         }
@@ -227,22 +255,36 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 parserParams.EmitEvent("close-loadingModal");
             }
         }
-
+        public void SetupSourceOptions()
+        {
+            sourceListTableData.data.Clear();
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.BeatSaver, "BeatSaver", null, Sprites.BeatSaverIcon.texture));
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.ScoreSaber, "ScoreSaber", null, Sprites.ScoreSaberIcon.texture));
+            sourceListTableData.tableView.ReloadData();
+        }
         public void SetupSortOptions()
         {
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Trending), "Trending", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.RecentlyRanked), "Recently Ranked", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Rating), "Rating", "BeatSaver", Sprites.BeatSaverIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Qualified), "Qualified", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Loved), "Loved", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Difficulty), "Difficulty", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Plays), "Plays", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Latest), "Latest", "BeatSaver", Sprites.BeatSaverIcon.texture));
-            sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Downloads), "Downloads", "BeatSaver", Sprites.BeatSaverIcon.texture));
-            //sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Plays), "Plays", "BeatSaver", Sprites.BeatSaverIcon.texture));
-            sortListTableData.tableView.ReloadData();
+            sortListTableData.data.Clear();
+            switch(_currentFilter)
+            {
+                case FilterMode.BeatSaver:
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Latest), "Latest", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Rating), "Rating", "BeatSaver", Sprites.BeatSaverIcon.texture));
 
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Downloads), "Downloads", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Plays), "Plays", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    break;
+                case FilterMode.ScoreSaber:
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Trending), "Trending", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Ranked), "Ranked", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Qualified), "Qualified", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Loved), "Loved", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Difficulty), "Difficulty", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Plays), "Plays", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    break;
+            }
+            sortListTableData.tableView.ReloadData();
         }
         public void Cleanup()
         {
@@ -292,7 +334,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     case ScoreSaberFilterOptions.Trending:
                         page = await ScoreSaberSharp.ScoreSaber.Trending(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
-                    case ScoreSaberFilterOptions.RecentlyRanked:
+                    case ScoreSaberFilterOptions.Ranked:
                         page = await ScoreSaberSharp.ScoreSaber.Ranked(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case ScoreSaberFilterOptions.Qualified:
@@ -442,6 +484,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public SortFilterCellInfo(SortFilter filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
         {
             sortFilter = filter;
+        }
+    }
+    public class SourceCellInfo : CustomListTableData.CustomCellInfo
+    {
+        public MoreSongsListViewController.FilterMode filter;
+        public SourceCellInfo(MoreSongsListViewController.FilterMode filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
+        {
+            this.filter = filter;
         }
     }
     public class BeatSaverCustomSongCellInfo : CustomListTableData.CustomCellInfo
