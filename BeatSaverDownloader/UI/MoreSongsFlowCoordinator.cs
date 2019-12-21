@@ -129,6 +129,10 @@ namespace BeatSaverDownloader.UI
         }
         protected override void BackButtonWasPressed(ViewController topViewController)
         {
+            if (_songDetailView.isInViewControllerHierarchy)
+            {
+                PopViewControllersFromNavigationController(_moreSongsNavigationcontroller, 1, null, true);
+            }
             _moreSongsView.Cleanup();
             var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
             mainFlow.DismissFlowCoordinator(this);
