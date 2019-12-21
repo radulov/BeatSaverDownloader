@@ -1,0 +1,3 @@
+﻿<settings-container>
+  <checkbox-setting text='Toggle Setting' value='toggle1' hover-hint='Hover Text'></checkbox-setting>
+</settings-container>

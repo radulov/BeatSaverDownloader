@@ -1,186 +1,194 @@
-﻿using BeatSaverDownloader.Misc;
-using HMUI;
+﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Components;
+using BeatSaberMarkupLanguage.Notify;
+using BeatSaverDownloader.Misc;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using VRUI;
-using UnityEngine.UI;
 using UnityEngine;
-using BeatSaverDownloader.UI.UIElements;
-using CustomUI.BeatSaber;
-using CustomUI.Utilities;
-using System.Collections;
 
 namespace BeatSaverDownloader.UI.ViewControllers
 {
-    class DownloadQueueViewController : CustomListViewController, TableView.IDataSource
+    public class DownloadQueueViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
     {
-        public List<Song> queuedSongs = new List<Song>();
+        public override string ResourceName => "BeatSaverDownloader.UI.BSML.downloadQueue.bsml";
+        internal static Action<DownloadQueueItem> didAbortDownload;
+        internal static Action<DownloadQueueItem> didFinishDownloadingItem;
+        [UIValue("download-queue")]
+        internal List<object> queueItems = new List<object>();
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        [UIComponent("download-list")]
+        private CustomCellListTableData _downloadList;
 
-        TextMeshProUGUI _titleText;
-
-        Button _abortButton;
-        LevelListTableCell _songListTableCellInstance;
-        private bool initialized = false;
-        public override void __Activate(ActivationType activationType)
+        protected override void DidDeactivate(DeactivationType deactivationType)
         {
-            base.__Activate(activationType);
-            //
-            if (!initialized && activationType == ActivationType.AddedToHierarchy)
-            {
-                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 35);
-                SongDownloader.Instance.songDownloaded -= SongDownloaded;
-                SongDownloader.Instance.songDownloaded += SongDownloaded;
-                _songListTableCellInstance = Resources.FindObjectsOfTypeAll<LevelListTableCell>().First(x => (x.name == "LevelListTableCell"));
-
-                var headerPanelRectTransform = Instantiate(Resources.FindObjectsOfTypeAll<PlayerSettingsViewController>().First().GetComponentsInChildren<RectTransform>(true).First(x => x.name == "HeaderPanel"), rectTransform);
-                headerPanelRectTransform.gameObject.SetActive(true);
-
-                _titleText = headerPanelRectTransform.GetComponentInChildren<TextMeshProUGUI>();
-                _titleText.text = "DOWNLOAD QUEUE";
-
-                _customListTableView.selectionType = TableViewSelectionType.None;
-
-                _abortButton = BeatSaberUI.CreateUIButton(rectTransform, "CreditsButton", new Vector2(36f, -30f), new Vector2(20f, 10f), AbortDownloads, "Abort All");
-                _abortButton.ToggleWordWrapping(false);
-                initialized = true;
-            }
-            else
-            {
-                _titleText.text = "DOWNLOAD QUEUE";
-            }
+            base.DidDeactivate(deactivationType);
         }
 
-        public void AbortDownloads()
+        [UIAction("#post-parse")]
+        internal void Setup()
         {
-            if (queuedSongs.Count > 0)
+            //   for (int i = 0; i < 8; ++i)
+            //       queueItems.Add(new DownloadQueueItem(Texture2D.whiteTexture, "SongName", "AuthorName"));
+            _downloadList?.tableView?.ReloadData();
+            didAbortDownload += DownloadAborted;
+            didFinishDownloadingItem += UpdateDownloadingState;
+        }
+
+        internal void EnqueueSong(BeatSaverSharp.Beatmap song, Texture2D cover)
+        {
+            DownloadQueueItem queuedSong = new DownloadQueueItem(song, cover);
+            queueItems.Add(queuedSong);
+            Misc.SongDownloader.Instance.QueuedDownload(song.Hash.ToUpper());
+            _downloadList?.tableView?.ReloadData();
+            UpdateDownloadingState(queuedSong);
+        }
+        internal void AbortAllDownloads()
+        {
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = new CancellationTokenSource();
+            foreach (DownloadQueueItem item in queueItems.ToArray())
             {
-                Plugin.log.Info("Cancelling downloads...");
-                foreach (Song song in queuedSongs.Where(x => x.songQueueState == SongQueueState.Downloading || x.songQueueState == SongQueueState.Queued))
+                item.AbortDownload();
+            }
+        }
+        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs, CancellationToken cancellationToken)
+        {
+
+            for (int i = 0; i < songs.Length; i++)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+                bool downloaded = false;
+                Tuple<BeatSaverSharp.Beatmap, Texture2D> pair = songs[i];
+                BeatSaverSharp.Beatmap map = pair.Item1;
+                if (map.Hash.StartsWith("scoresaber"))
                 {
-                    song.songQueueState = SongQueueState.Error;
+                    downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash.Split('_')[1]);
+                    if (downloaded) continue;
+                    map = await BeatSaverSharp.BeatSaver.Hash(map.Hash.Split('_')[1]);
                 }
-                queuedSongs.Clear();
+                bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == map);
+                downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash);
+                if (!inQueue & !downloaded) EnqueueSong(map, pair.Item2);
+            }
+        }
+        internal void UpdateDownloadingState(DownloadQueueItem item)
+        {
+            foreach (DownloadQueueItem inQueue in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Queued).ToArray())
+            {
+                if (Misc.PluginConfig.maxSimultaneousDownloads > queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Downloading).ToArray().Length)
+                    inQueue.Download();
+            }
+            foreach (DownloadQueueItem downloaded in queueItems.Where(x => (x as DownloadQueueItem).queueState == SongQueueState.Downloaded).ToArray())
+            {
+                queueItems.Remove(downloaded);
+                _downloadList?.tableView?.ReloadData();
+            }
+            if (queueItems.Count == 0)
                 SongCore.Loader.Instance.RefreshSongs(false);
-                Refresh();
-            }
         }
 
-        protected override void DidDeactivate(DeactivationType type)
+        internal void DownloadAborted(DownloadQueueItem download)
         {
-            SongDownloader.Instance.songDownloaded -= SongDownloaded;
-        }
+            if (queueItems.Contains(download))
+                queueItems.Remove(download);
 
-        public void EnqueueSong(Song song, bool startDownload = true)
-        {
-
-            queuedSongs.Add(song);
-            song.songQueueState = SongQueueState.Queued;
-            if (startDownload && queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading) < PluginConfig.maxSimultaneousDownloads)
-            {
-                StartCoroutine(DownloadSong(song));
-                Refresh();
-            }
-            else
-                RefreshVisuals();
-
-        }
-
-        public void EnqueueSongAtStart(Song song, bool startDownload = true)
-        {
-            queuedSongs.Insert(0, song);
-            song.songQueueState = SongQueueState.Queued;
-            if (startDownload && queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading) < PluginConfig.maxSimultaneousDownloads)
-            {
-                StartCoroutine(DownloadSong(song));
-                Refresh();
-            }
-            else
-                RefreshVisuals();
-        }
-        public void DownloadAllSongsFromQueue()
-        {
-            Plugin.log.Info("Downloading all songs from queue...");
-
-            for (int i = 0; i < Math.Min(PluginConfig.maxSimultaneousDownloads, queuedSongs.Count); i++)
-            {
-                StartCoroutine(DownloadSong(queuedSongs[i]));
-            }
-            Refresh();
-        }
-
-        IEnumerator DownloadSong(Song song)
-        {
-            yield return SongDownloader.Instance.DownloadSongCoroutine(song);
-            Refresh();
-        }
-
-        private void SongDownloaded(Song obj)
-        {
-            Refresh();
-            if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading) < PluginConfig.maxSimultaneousDownloads && queuedSongs.Any(x => x.songQueueState == SongQueueState.Queued))
-            {
-                StartCoroutine(DownloadSong(queuedSongs.First(x => x.songQueueState == SongQueueState.Queued)));
-            }
-        }
-
-        public void Refresh()
-        {
-            int removed = queuedSongs.RemoveAll(x => x.songQueueState == SongQueueState.Downloaded || x.songQueueState == SongQueueState.Error);
-
-            Plugin.log.Info($"Removed {removed} songs from queue");
-
-            _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, true);
-
-            if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading || x.songQueueState == SongQueueState.Queued) == 0)
-            {
-                Plugin.log.Info("All songs downloaded!");
+            if (queueItems.Count == 0)
                 SongCore.Loader.Instance.RefreshSongs(false);
-            }
+            _downloadList?.tableView?.ReloadData();
+        }
+    }
 
-            if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading) < PluginConfig.maxSimultaneousDownloads && queuedSongs.Any(x => x.songQueueState == SongQueueState.Queued))
-                StartCoroutine(DownloadSong(queuedSongs.First(x => x.songQueueState == SongQueueState.Queued)));
+    internal class DownloadQueueItem : INotifiableHost
+    {
+        public SongQueueState queueState = SongQueueState.Queued;
+        internal Progress<double> downloadProgress;
+        internal BeatSaverSharp.Beatmap beatmap;
+        private UnityEngine.UI.Image _bgImage;
+        private float _downloadingProgess;
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        [UIComponent("coverImage")]
+        private UnityEngine.UI.RawImage _coverImage;
+
+        [UIComponent("songNameText")]
+        private TextMeshProUGUI _songNameText;
+
+        [UIComponent("authorNameText")]
+        private TextMeshProUGUI _authorNameText;
+
+        [UIAction("abortClicked")]
+        internal void AbortDownload()
+        {
+            cancellationTokenSource.Cancel();
+            DownloadQueueViewController.didAbortDownload?.Invoke(this);
         }
 
-        public void RefreshVisuals()
+        private string _songName;
+        private string _authorName;
+        private Texture2D _coverTexture;
+
+        public DownloadQueueItem()
         {
-            int removed = queuedSongs.RemoveAll(x => x.songQueueState == SongQueueState.Downloaded || x.songQueueState == SongQueueState.Error);
-            if (removed > 0)
-                Plugin.log.Info($"Removed {removed} songs from queue");
-
-            _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, true);
-
-            if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading || x.songQueueState == SongQueueState.Queued) == 0)
-            {
-                Plugin.log.Info("All songs downloaded!");
-                SongCore.Loader.Instance.RefreshSongs(false);
-            }
-
-    //        if (queuedSongs.Count(x => x.songQueueState == SongQueueState.Downloading) < PluginConfig.maxSimultaneousDownloads && queuedSongs.Any(x => x.songQueueState == SongQueueState.Queued))
-    //            StartCoroutine(DownloadSong(queuedSongs.First(x => x.songQueueState == SongQueueState.Queued)));
-        }
-        public override float CellSize()
-        {
-            return 8.5f;
         }
 
-        public override int NumberOfCells()
+        public DownloadQueueItem(BeatSaverSharp.Beatmap song, Texture2D cover)
         {
-            return queuedSongs.Count;
+            beatmap = song;
+            _songName = song.Metadata.SongName;
+            _coverTexture = cover;
+            _authorName = $"{song.Metadata.SongAuthorName} <size=80%>[{song.Metadata.LevelAuthorName}]";
         }
 
-        public override TableCell CellForIdx(TableView tableView, int row)
+        [UIAction("#post-parse")]
+        internal void Setup()
         {
-            LevelListTableCell _tableCell = GetTableCell(false);
+            if (!_coverImage || !_songNameText || !_authorNameText) return;
 
-            DownloadQueueTableCell _queueCell = _tableCell.gameObject.AddComponent<DownloadQueueTableCell>();
+            var filter = _coverImage.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();
+            filter.aspectRatio = 1f;
+            filter.aspectMode = UnityEngine.UI.AspectRatioFitter.AspectMode.HeightControlsWidth;
+            _coverImage.texture = _coverTexture;
+            _coverImage.texture.wrapMode = TextureWrapMode.Clamp;
+            _coverImage.rectTransform.sizeDelta = new Vector2(8, 0);
+            _songNameText.text = _songName;
+            _authorNameText.text = _authorName;
+            downloadProgress = new Progress<double>(ProgressUpdate);
 
-            _queueCell.Init(queuedSongs[row]);
+            _bgImage = _coverImage.transform.parent.gameObject.AddComponent<UnityEngine.UI.Image>();
+            _bgImage.enabled = true;
+            _bgImage.sprite = Sprite.Create((new Texture2D(1, 1)), new Rect(0, 0, 1, 1), Vector2.one / 2f);
+            _bgImage.type = UnityEngine.UI.Image.Type.Filled;
+            _bgImage.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
+            _bgImage.fillAmount = 0;
+        }
 
-            return _queueCell;
+        internal void ProgressUpdate(double progress)
+        {
+            _downloadingProgess = (float)progress;
+            Color color = SongCore.Utilities.HSBColor.ToColor(new SongCore.Utilities.HSBColor(Mathf.PingPong(_downloadingProgess * 0.35f, 1), 1, 1));
+            color.a = 0.35f;
+            _bgImage.color = color;
+            _bgImage.fillAmount = _downloadingProgess;
+        }
+
+        public async void Download()
+        {
+            queueState = SongQueueState.Downloading;
+            await SongDownloader.Instance.DownloadSong(beatmap, cancellationTokenSource.Token, downloadProgress);
+            queueState = SongQueueState.Downloaded;
+            DownloadQueueViewController.didFinishDownloadingItem?.Invoke(this);
+        }
+
+        public void Update()
+        {
         }
     }
 }

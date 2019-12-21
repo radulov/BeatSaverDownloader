@@ -1,359 +1,322 @@
-﻿using BeatSaverDownloader.Misc;
+﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Notify;
+using HMUI;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using VRUI;
 using UnityEngine.UI;
-using BeatSaverDownloader.UI.FlowCoordinators;
-using CustomUI.BeatSaber;
-using HMUI;
 
 namespace BeatSaverDownloader.UI.ViewControllers
 {
-    enum DownloadState { Downloaded, Downloading, NotDownloaded};
-
-    class SongDetailViewController : VRUIViewController
+    public class SongDetailViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController, INotifiableHost
     {
-        public event Action<Song> downloadButtonPressed;
-        public event Action<Song> favoriteButtonPressed;
+        public override string ResourceName => "BeatSaverDownloader.UI.BSML.songDetail.bsml";
 
-        private Song _currentSong;
+        private GameObject _levelDetails;
+        private bool _detailViewSetup = false;
+        private BeatSaverSharp.Beatmap _currentSong;
 
-        private ParsedBeatmapCharacteristic selectedCharacteristic;
-        private ParsedBeatmapDifficulty[] currentDifficulties;
-        private TextMeshProUGUI songNameText;
-        private IconSegmentedControl _characteristicSegmentedDisplay;
-        private TextSegmentedControl _difficultySegmentedDisplay;
-        private TextMeshProUGUI difficulty1Text;
-        private TextMeshProUGUI difficulty2Text;
-        private TextMeshProUGUI difficulty3Text;
-        private TextMeshProUGUI difficulty1Title;
-        private TextMeshProUGUI difficulty2Title;
-        private TextMeshProUGUI difficulty3Title;
+        private BeatmapDifficultySegmentedControlController _difficultiesSegmentedControllerClone;
+        private BeatmapCharacteristicSegmentedControlController _characteristicSegmentedControllerClone;
+        private TextSegmentedControl _diffSegmentedControl;
+        private IconSegmentedControl _characteristicSegmentedControl;
 
-        private TextMeshProUGUI downloadsText;
-        private TextMeshProUGUI playsText;
+        private BeatSaverSharp.BeatmapCharacteristic _selectedCharacteristic;
+        private BeatSaverSharp.BeatmapCharacteristicDifficulty[] _currentDifficulties;
 
-        private RawImage coverImage;
+        private TextMeshProUGUI _songNameText;
+        private RawImage _coverImage;
 
-        private LevelParamsPanel _levelParams;
-        private StandardLevelDetailView _levelDetails;
+        private TextMeshProUGUI _timeText;
+        private TextMeshProUGUI _bpmText;
+        private TextMeshProUGUI _npsText;
+        private TextMeshProUGUI _notesText;
+        private TextMeshProUGUI _obstaclesText;
+        private TextMeshProUGUI _bombsText;
 
-        private Button _downloadButton;
-        private Button _favoriteButton;
-
-        private GameObject _loadingIndicator;
-
-        //Time      - Downloads
-        //BPM       - Plays
-        //Notes     - BPM
-        //Obstacles - Upvotes
-        //Bombs     - Downvotes
-
-        protected override void DidActivate(bool firstActivation, ActivationType type)
+        private bool _downloadInteractable = false;
+        
+        public Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+        public Action<BeatSaverSharp.User> didPressUploader;
+        public Action<string> setDescription;
+        [UIValue("downloadInteractable")]
+        public bool DownloadInteractable
         {
-            if (firstActivation)
+            get => _downloadInteractable;
+            set
             {
-                gameObject.SetActive(true);
-                _levelDetails = GetComponentsInChildren<StandardLevelDetailView>(true).First(x => x.name == "LevelDetail");
-                _levelDetails.gameObject.SetActive(true);
-                (_levelDetails.transform as RectTransform).anchoredPosition = new Vector2(-40, 0);
-                BeatmapDifficultySegmentedControlController beatmapDifficultySegmentedControl = GetComponentsInChildren<BeatmapDifficultySegmentedControlController>(true).First(x => x.name == "BeatmapDifficultySegmentedControl");
-                beatmapDifficultySegmentedControl.gameObject.SetActive(false);
-                BeatmapCharacteristicSegmentedControlController beatmapCharacteristicSegmentedControl = GetComponentsInChildren<BeatmapCharacteristicSegmentedControlController>(true).First(x => x.name == "BeatmapCharacteristicSegmentedControl");
-                beatmapCharacteristicSegmentedControl.gameObject.SetActive(false);
+                _downloadInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _uploaderInteractable = true;
+        [UIValue("uploaderInteractable")]
+        public bool UploaderInteractable
+        {
+            get => _uploaderInteractable;
+            set
+            {
+                _uploaderInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
+        [UIAction("#post-parse")]
+        internal void Setup()
+        {
+            (transform as RectTransform).sizeDelta = new Vector2(70, 0);
+            (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
+            (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
 
-                RemoveCustomUIElements(rectTransform);
+            SetupDetailView();
+        }
 
-                _levelParams = GetComponentsInChildren<LevelParamsPanel>().First(x => x.name == "LevelParamsPanel");
+        [UIAction("downloadPressed")]
+        internal void DownloadPressed()
+        {
+            didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
+            DownloadInteractable = false;
+        }
+        [UIAction("uploaderPressed")]
+        internal void UploaderPressed()
+        {
+            didPressUploader?.Invoke(_currentSong.Uploader);
+        }
 
-                foreach (HoverHint hint in _levelParams.transform.GetComponentsInChildren<HoverHint>())
-                {
-                    switch (hint.name)
-                    {
-                        case "Time":
-                            {
-                                hint.GetComponentInChildren<UnityEngine.UI.Image>().sprite = Sprites.DownloadIcon;
-                            }; break;
-                        case "BPM":
-                            {
-                                hint.GetComponentInChildren<UnityEngine.UI.Image>().sprite = Sprites.PlayIcon;
-                            }; break;
-                        case "NotesCount":
-                            {
-                                hint.GetComponentInChildren<UnityEngine.UI.Image>().sprite = Resources.FindObjectsOfTypeAll<Sprite>().First(x => x.name == "MetronomeIcon");
-                            }; break;
-                        case "ObstaclesCount":
-                            {
-                                hint.GetComponentInChildren<UnityEngine.UI.Image>().sprite = Sprites.ThumbUp;
-                            }; break;
-                        case "BombsCount":
-                            {
-                                hint.GetComponentInChildren<UnityEngine.UI.Image>().sprite = Sprites.ThumbDown;
-                            }; break;
-                    }
-
-                    Destroy(hint);
-                }
-                
-                RectTransform yourStats = GetComponentsInChildren<RectTransform>().First(x => x.name == "Stats");
-                yourStats.gameObject.SetActive(true);
-                
-                TextMeshProUGUI[] _textComponents = GetComponentsInChildren<TextMeshProUGUI>();
-                
-                try
-                {
-                    songNameText = _textComponents.First(x => x.name == "SongNameText");
-
-                    downloadsText = _textComponents.First(x => x.name == "ValueText" && x.transform.parent.name == "Time");
-                    downloadsText.fontSize = 3f;
-
-                    playsText = _textComponents.First(x => x.name == "ValueText" && x.transform.parent.name == "BPM");
-                    playsText.fontSize = 3f;
-            //        foreach (var x in _textComponents)
-            //        {
-            //            Console.WriteLine(x.name);
-            //            Console.WriteLine(x.transform.parent.name);
-            //        }
-                    difficulty1Title = _textComponents.First(x => x.name == "Title" && x.transform.parent.name == "MaxRank"); //.text = "Expert/+";
-                    difficulty1Text = _textComponents.First(x => x.name == "Value" && x.transform.parent.name == "MaxRank");
-
-                    difficulty2Title = _textComponents.First(x => x.name == "Title" && x.transform.parent.name == "Highscore");//.text = "Hard";
-                    difficulty2Text = _textComponents.First(x => x.name == "Value" && x.transform.parent.name == "Highscore");
-
-                    difficulty3Title = _textComponents.First(x => x.name == "Title" && x.transform.parent.name == "MaxCombo");//.text = "Easy/Normal";
-                    difficulty3Text = _textComponents.First(x => x.name == "Value" && x.transform.parent.name == "MaxCombo");
-                }
-                catch (Exception e)
-                {
-                    Plugin.log.Critical("Unable to convert detail view controller! Exception:  " + e);
-                }
-
-                _downloadButton = _levelDetails.playButton;
-                _downloadButton.SetButtonText("DOWNLOAD");
-                _downloadButton.ToggleWordWrapping(false);
-                _downloadButton.onClick.RemoveAllListeners();
-                _downloadButton.onClick.AddListener(() => { downloadButtonPressed?.Invoke(_currentSong); });
-                (_downloadButton.transform as RectTransform).sizeDelta = new Vector2(26f, 8.8f);
-
-                _favoriteButton = _levelDetails.practiceButton;
-                _favoriteButton.SetButtonIcon(Sprites.AddToFavorites);
-                _favoriteButton.onClick.RemoveAllListeners();
-                _favoriteButton.onClick.AddListener(() => { favoriteButtonPressed?.Invoke(_currentSong); });
-
-                coverImage = _levelDetails.GetPrivateField<RawImage>("_coverImage");
-
-                _loadingIndicator = BeatSaberUI.CreateLoadingSpinner(rectTransform);
-                (_loadingIndicator.transform as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
-                (_loadingIndicator.transform as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
-                (_loadingIndicator.transform as RectTransform).anchoredPosition = new Vector2(0f, 0f);
-                (_loadingIndicator.transform as RectTransform).anchoredPosition = new Vector2(-40f, 0f);
+        internal void ClearData()
+        {
+            if (_detailViewSetup)
+            {
+                //Clear all the data
+                _timeText.text = "--";
+                _bpmText.text = "--";
+                _npsText.text = "--";
+                _notesText.text = "--";
+                _obstaclesText.text = "--";
+                _bombsText.text = "--";
+                _songNameText.text = "--";
+                _coverImage.texture = Texture2D.blackTexture;
+                _diffSegmentedControl.SetTexts(new string[] { });
+                _characteristicSegmentedControl.SetData(new IconSegmentedControl.DataItem[] { });
+                DownloadInteractable = false;
+                UploaderInteractable = false;
             }
         }
 
-        public void SetFavoriteState(bool favorited)
+        internal async void Initialize(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover)
         {
-            _favoriteButton.SetButtonIcon(favorited ? Sprites.RemoveFromFavorites : Sprites.AddToFavorites);
-        }
+            if (song.Value.Hash.StartsWith("scoresaber"))
+                song.Value = await BeatSaverSharp.BeatSaver.Hash(song.Value.Hash.Split('_')[1]);
 
-        public void SetDownloadState(DownloadState state)
-        {
-            _downloadButton.SetButtonText(state == DownloadState.Downloading ? "QUEUED..." : (state == DownloadState.Downloaded ? "DELETE" : "DOWNLOAD"));
-            _downloadButton.interactable = state != DownloadState.Downloading;
-        }
-
-        public void SetContent(MoreSongsFlowCoordinator sender, Song newSongInfo)
-        {
-            selectedCharacteristic = null;
-            currentDifficulties = null;
-            _currentSong = newSongInfo;
-
-            songNameText.text = _currentSong.songName;
-            if (_characteristicSegmentedDisplay == null)
-            {
-                _characteristicSegmentedDisplay = BeatSaberUI.CreateIconSegmentedControl(rectTransform, new Vector2(-40, .2f), new Vector2(70, 9f),
-                    delegate (int value) { SelectedCharacteristic(_currentSong.metadata.characteristics[value]); });
-                SetupCharacteristicDisplay(_characteristicSegmentedDisplay, _currentSong);
-            }
-            else
-                SetupCharacteristicDisplay(_characteristicSegmentedDisplay, _currentSong);
-
+                _currentSong = song.Value;
             
-
-            if (_difficultySegmentedDisplay == null)
-            {
-                _difficultySegmentedDisplay = BeatSaberUI.CreateTextSegmentedControl(rectTransform, new Vector2(-40, -9f), new Vector2(85, 8f),
-                    delegate (int value) { SelectedDifficulty(currentDifficulties[value]); } );
-                _difficultySegmentedDisplay.transform.localScale = new Vector3(.8f,
-                    _difficultySegmentedDisplay.transform.localScale.y, _difficultySegmentedDisplay.transform.localScale.z);
-                SetupDifficultyDisplay(_difficultySegmentedDisplay, _currentSong);
-            }
-            else
-                SetupDifficultyDisplay(_difficultySegmentedDisplay, _currentSong);
-
-            downloadsText.text = _currentSong.downloads.ToString();
-            _levelParams.bpm = (float)(_currentSong.plays);
-            _levelParams.notesCount = (int)_currentSong.bpm;
-            _levelParams.obstaclesCount = _currentSong.upVotes;
-            _levelParams.bombsCount = _currentSong.downVotes;
-
-            Polyglot.LocalizedTextMeshProUGUI localizer1 = difficulty1Title.GetComponentInChildren<Polyglot.LocalizedTextMeshProUGUI>();
-            if (localizer1 != null)
-                GameObject.Destroy(localizer1);
-            Polyglot.LocalizedTextMeshProUGUI localizer2 = difficulty2Title.GetComponentInChildren<Polyglot.LocalizedTextMeshProUGUI>();
-            if (localizer2 != null)
-                GameObject.Destroy(localizer2);
-            Polyglot.LocalizedTextMeshProUGUI localizer3 = difficulty3Title.GetComponentInChildren<Polyglot.LocalizedTextMeshProUGUI>();
-            if (localizer3 != null)
-                GameObject.Destroy(localizer3);
-            difficulty1Title.text = "";
-            difficulty2Title.text = "";
-            difficulty3Title.text = "";
-            difficulty1Text.text = "";
-            difficulty2Text.text = "";
-            difficulty3Text.text = "";
-
-
-
-
-     //       difficulty1Text.text = (_currentSong.metadata.difficulties.expert || _currentSong.metadata.difficulties.expertPlus) ? "Yes" : "No";
-     //       difficulty2Text.text = (_currentSong.metadata.difficulties.hard) ? "Yes" : "No";
-     //       difficulty3Text.text = (_currentSong.metadata.difficulties.easy || _currentSong.metadata.difficulties.normal) ? "Yes" : "No";
-
-            StartCoroutine(LoadScripts.LoadSpriteCoroutine(_currentSong.coverURL, (cover) => { coverImage.texture = cover.texture;}));
-
-            SetFavoriteState(PluginConfig.favoriteSongs.Any(x => x.Contains(_currentSong.hash)));
-            SetDownloadState((SongDownloader.Instance.IsSongDownloaded(_currentSong) ? DownloadState.Downloaded : (sender.IsDownloadingSong(_currentSong) ? DownloadState.Downloading : DownloadState.NotDownloaded)));
-            SetLoadingState(false);
-
-
-            SelectedCharacteristic(_currentSong.metadata.characteristics[0]);
+            _songNameText.text = _currentSong.Metadata.SongName;
+            if (cover != null)
+                _coverImage.texture = cover;
+            UpdateDownloadButtonStatus();
+            SetupCharacteristicDisplay();
+            SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
+            UploaderInteractable = true;
+            setDescription?.Invoke(_currentSong.Description);
         }
 
-    public void SelectedDifficulty(ParsedBeatmapDifficulty difficulty)
-    {
-            difficulty3Title.text = "Map Length";
-            difficulty2Title.text = "Note Count";
-            difficulty1Title.text = "NJS";
-            difficulty3Text.text = $"{Math.Floor((double)difficulty.length / 60):N0}:{Math.Floor((double)difficulty.length % 60):00}";
-            difficulty2Text.text = $"{difficulty.notes}";
-            difficulty1Text.text = $"{difficulty.njs}";
-
-
-    }
-        public void SelectedCharacteristic(ParsedBeatmapCharacteristic characteristic)
+        internal void UpdateDownloadButtonStatus()
         {
-            selectedCharacteristic = characteristic;
-            var diffs = new List<ParsedBeatmapDifficulty>();
-            if (characteristic.difficulties.easy != null)
-                diffs.Add(characteristic.difficulties.easy);
-            if (characteristic.difficulties.normal != null)
-                diffs.Add(characteristic.difficulties.normal);
-            if (characteristic.difficulties.hard != null)
-                diffs.Add(characteristic.difficulties.hard);
-            if (characteristic.difficulties.expert != null)
-                diffs.Add(characteristic.difficulties.expert);
-            if (characteristic.difficulties.expertPlus != null)
-                diffs.Add(characteristic.difficulties.expertPlus);
-
-            currentDifficulties = diffs.ToArray();
-       //     Plugin.log.Info("difficulties: " + currentDifficulties.Count());
-
-            if (_difficultySegmentedDisplay != null)
-                SetupDifficultyDisplay(_difficultySegmentedDisplay, _currentSong);
-     //       else
-     //           Plugin.log.Info("null diff segmented");
+            DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash);
         }
 
-
-        public void SetLoadingState(bool isLoading) 
+        protected override void DidDeactivate(DeactivationType deactivationType)
         {
-            if (isLoading)
-            {
-                _downloadButton.SetButtonText("LOADING...");
-                songNameText.text = "Loading...";
-                downloadsText.text = "0";
-                _levelParams.bpm = 0f;
-                _levelParams.notesCount = 0;
-                _levelParams.obstaclesCount = 0;
-                _levelParams.bombsCount = 0;
-            }
-
-            if (_loadingIndicator != null)
-            {
-                _downloadButton.interactable = !isLoading;
-                _levelDetails.gameObject.SetActive(!isLoading);
-                _loadingIndicator.SetActive(isLoading);
-                if(_characteristicSegmentedDisplay)
-                _characteristicSegmentedDisplay.gameObject.SetActive(!isLoading);
-                if (_difficultySegmentedDisplay)
-                    _difficultySegmentedDisplay.gameObject.SetActive(!isLoading);
-            }
+            base.DidDeactivate(deactivationType);
         }
 
-        void SetupDifficultyDisplay(TextSegmentedControl controller, Song song)
+        internal void SetupDetailView()
         {
-            List<string> Diffs = new List<string>();
-            if(selectedCharacteristic != null)
-            {
-            if(selectedCharacteristic.difficulties.easy != null)
-                Diffs.Add("Easy");
-            if (selectedCharacteristic.difficulties.normal != null)
-                Diffs.Add("Normal");
-            if (selectedCharacteristic.difficulties.hard != null)
-                Diffs.Add("Hard");
-            if (selectedCharacteristic.difficulties.expert != null)
-                Diffs.Add("Expert");
-            if (selectedCharacteristic.difficulties.expertPlus != null)
-                Diffs.Add("Expert+");
-            }
+            _levelDetails = GameObject.Instantiate(PluginUI._levelDetailClone, gameObject.transform);
+            _levelDetails.gameObject.SetActive(false);
 
-            controller.SetTexts(Diffs.ToArray());
-            if(Diffs.Count > 0)
-            controller.SelectCellWithNumber(0);
-            if (currentDifficulties != null) 
-            SelectedDifficulty(currentDifficulties[0]);
-            else
-            {
-           //     Plugin.log.Info("current diffs null");
-            }
+            _characteristicSegmentedControllerClone = _levelDetails.GetComponentInChildren<BeatmapCharacteristicSegmentedControlController>();
+            _characteristicSegmentedControl = CreateIconSegmentedControl(_characteristicSegmentedControllerClone.transform as RectTransform, new Vector2(0, 0), new Vector2(0, 0),
+                delegate (int value) { SelectedCharacteristic(_currentSong.Metadata.Characteristics[value]); });
 
+            _difficultiesSegmentedControllerClone = _levelDetails.GetComponentInChildren<BeatmapDifficultySegmentedControlController>();
+            _diffSegmentedControl = CreateTextSegmentedControl(_difficultiesSegmentedControllerClone.transform as RectTransform, new Vector2(0, 0), new Vector2(0, 0),
+                delegate (int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
+
+            _songNameText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.name == "SongNameText");
+            _coverImage = _levelDetails.transform.Find("Level").Find("CoverImage").GetComponent<RawImage>();
+
+            _timeText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "Time");
+            _bpmText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BPM");
+            _npsText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "NPS");
+            _notesText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "NotesCount");
+            _obstaclesText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
+            _bombsText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BombsCount");
+
+            _timeText.text = "--";
+            _bpmText.text = "--";
+            _npsText.text = "--";
+            _notesText.text = "--";
+            _obstaclesText.text = "--";
+            _bombsText.text = "--";
+            _songNameText.text = "--";
+            _detailViewSetup = true;
+            _levelDetails.gameObject.SetActive(true);
         }
-        void SetupCharacteristicDisplay(IconSegmentedControl controller, Song song)
+
+        public void SelectedDifficulty(BeatSaverSharp.BeatmapCharacteristicDifficulty difficulty)
+        {
+            _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
+            _bpmText.text = _currentSong.Metadata.BPM.ToString();
+            _npsText.text = ((float)difficulty.Notes / (float)difficulty.Length).ToString("F2");
+            _notesText.text = difficulty.Notes.ToString();
+            _obstaclesText.text = difficulty.Obstacles.ToString();
+            _bombsText.text = difficulty.Bombs.ToString();
+        }
+
+        public void SelectedCharacteristic(BeatSaverSharp.BeatmapCharacteristic characteristic)
+        {
+            _selectedCharacteristic = characteristic;
+            if (_diffSegmentedControl != null)
+                SetupDifficultyDisplay();
+        }
+
+        internal void SetupDifficultyDisplay()
+        {
+            var diffs = new List<BeatSaverSharp.BeatmapCharacteristicDifficulty>();
+            List<string> diffNames = new List<string>(_selectedCharacteristic.Difficulties.Keys.Where(x => _selectedCharacteristic.Difficulties[x].HasValue)).OrderBy(x => DiffOrder(x)).ToList();
+            foreach (var diff in diffNames)
+            {
+                if (_selectedCharacteristic.Difficulties[diff].HasValue)
+                    diffs.Add(_selectedCharacteristic.Difficulties[diff].Value);
+            }
+
+            for (int i = 0; i < diffNames.Count; ++i)
+            {
+                diffNames[i] = ToDifficultyName(diffNames[i]);
+            }
+            _currentDifficulties = diffs.ToArray();
+
+            _diffSegmentedControl.SetTexts(diffNames.ToArray());
+            foreach (var text in _diffSegmentedControl.GetComponentsInChildren<TextMeshProUGUI>()) text.enableWordWrapping = false;
+
+            if (diffs.Count > 0)
+                _diffSegmentedControl.SelectCellWithNumber(0);
+            if (_currentDifficulties != null)
+                SelectedDifficulty(_currentDifficulties[0]);
+        }
+
+        private void SetupCharacteristicDisplay()
         {
             List<IconSegmentedControl.DataItem> characteristics = new List<IconSegmentedControl.DataItem>();
-            foreach(var c in song.metadata.characteristics)
+            foreach (var c in _currentSong.Metadata.Characteristics)
             {
-                BeatmapCharacteristicSO characteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName(c.name);
+                BeatmapCharacteristicSO characteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName(c.Name);
                 if (characteristic.characteristicNameLocalizationKey == "Missing Characteristic")
                 {
-                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, $"Missing Characteristic: {c.name}"));
+                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, $"Missing Characteristic: {c.Name}"));
                 }
                 else
-                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, characteristic.descriptionLocalizationKey));
+                    characteristics.Add(new IconSegmentedControl.DataItem(characteristic.icon, Polyglot.Localization.Get(characteristic.descriptionLocalizationKey)));
             }
 
-            controller.SetData(characteristics.ToArray());
-           
+            _characteristicSegmentedControl.SetData(characteristics.ToArray());
         }
 
-        void RemoveCustomUIElements(Transform parent)
+        internal static string ToDifficultyName(string name)
         {
-            for (int i = 0; i < parent.childCount; i++)
-            {
-                Transform child = parent.GetChild(i);
+            if (name == "easy")
+                return "Easy";
+            else if (name == "normal")
+                return "Normal";
+            else if (name == "hard")
+                return "Hard";
+            else if (name == "expert")
+                return "Expert";
+            else if (name == "expertPlus")
+                return "Expert+";
+            else
+                return "--";
+        }
 
-                if (child.name.StartsWith("CustomUI"))
-                {
-                    Destroy(child.gameObject);
-                }
-                if (child.childCount > 0)
-                {
-                    RemoveCustomUIElements(child);
-                }
+        internal static int DiffOrder(string name)
+        {
+            switch (name)
+            {
+                case "easy":
+                    return 0;
+
+                case "normal":
+                    return 1;
+
+                case "hard":
+                    return 2;
+
+                case "expert":
+                    return 3;
+
+                case "expertPlus":
+                    return 4;
+
+                default:
+                    return 5;
             }
+        }
+
+        public static TextSegmentedControl CreateTextSegmentedControl(RectTransform parent, Vector2 anchoredPosition, Vector2 sizeDelta, Action<int> onValueChanged = null, float fontSize = 4f, float padding = 8f)
+        {
+            var segmentedControl = new GameObject("CustomTextSegmentedControl", typeof(RectTransform)).AddComponent<TextSegmentedControl>();
+            segmentedControl.gameObject.AddComponent<HorizontalLayoutGroup>();
+
+            TextSegmentedControlCellNew[] _segments = Resources.FindObjectsOfTypeAll<TextSegmentedControlCellNew>();
+
+            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "HSingleTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.Last(x => x.name == "HMiddleTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.Last(x => x.name == "RightTextSegmentedControlCell"));
+
+            segmentedControl.SetPrivateField("_container", Resources.FindObjectsOfTypeAll<TextSegmentedControl>().Select(x => x.GetPrivateField<object>("_container")).First(x => x != null));
+
+            segmentedControl.transform.SetParent(parent, false);
+            (segmentedControl.transform as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
+            (segmentedControl.transform as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
+            (segmentedControl.transform as RectTransform).anchoredPosition = anchoredPosition;
+            (segmentedControl.transform as RectTransform).sizeDelta = sizeDelta;
+
+            segmentedControl.SetPrivateField("_fontSize", fontSize);
+            segmentedControl.SetPrivateField("_padding", padding);
+            if (onValueChanged != null)
+                segmentedControl.didSelectCellEvent += (sender, index) => { onValueChanged(index); };
+
+            return segmentedControl;
+        }
+
+        public static IconSegmentedControl CreateIconSegmentedControl(RectTransform parent, Vector2 anchoredPosition, Vector2 sizeDelta, Action<int> onValueChanged = null)
+        {
+            var segmentedControl = new GameObject("CustomIconSegmentedControl", typeof(RectTransform)).AddComponent<IconSegmentedControl>();
+            segmentedControl.gameObject.AddComponent<HorizontalLayoutGroup>();
+
+            IconSegmentedControlCell[] _segments = Resources.FindObjectsOfTypeAll<IconSegmentedControlCell>();
+
+            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "SingleIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.First(x => x.name == "HMiddleIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.First(x => x.name == "RightIconSegmentedControlCell"));
+
+            segmentedControl.SetPrivateField("_container", Resources.FindObjectsOfTypeAll<IconSegmentedControl>().Select(x => x.GetPrivateField<object>("_container")).First(x => x != null));
+
+            segmentedControl.transform.SetParent(parent, false);
+            (segmentedControl.transform as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
+            (segmentedControl.transform as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
+            (segmentedControl.transform as RectTransform).anchoredPosition = anchoredPosition;
+            (segmentedControl.transform as RectTransform).sizeDelta = sizeDelta;
+
+            if (onValueChanged != null)
+                segmentedControl.didSelectCellEvent += (sender, index) => { onValueChanged(index); };
+
+            return segmentedControl;
         }
     }
 }

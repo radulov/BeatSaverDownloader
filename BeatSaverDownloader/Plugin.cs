@@ -1,15 +1,16 @@
-﻿using System;
-using System.Reflection;
-using UnityEngine.SceneManagement;
-using BeatSaverDownloader.Misc;
+﻿using BeatSaverDownloader.Misc;
 using BeatSaverDownloader.UI;
-using System.Collections.Generic;
-using UnityEngine;
 using BS_Utils.Gameplay;
 using IPA;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine.SceneManagement;
 
 namespace BeatSaverDownloader
 {
+    public enum SongQueueState { Queued, Downloading, Downloaded, Error };
+
     public class Plugin : IBeatSaberPlugin
     {
         public static Plugin instance;
@@ -35,21 +36,19 @@ namespace BeatSaverDownloader
             instance = this;
             PluginConfig.LoadConfig();
             Sprites.ConvertToSprites();
-            PlaylistsCollection.ReloadPlaylists();
-            SongCore.Loader.SongsLoadedEvent += SongCore_SongsLoadedEvent;
 
-            BSEvents.OnLoad();
-            BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
+            PluginUI.instance.Setup();
+
+            BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
         }
 
         private void OnMenuSceneLoadedFresh()
         {
             try
             {
-                PluginUI.Instance.OnLoad();
-                VotingUI.Instance.OnLoad();
-                SongListTweaks.Instance.OnLoad();
-
+                PluginUI.SetupLevelDetailClone();
+                Settings.SetupSettings();
+                SongCore.Loader.SongsLoadedEvent += Loader_SongsLoadedEvent;
                 GetUserInfo.GetUserName();
             }
             catch (Exception e)
@@ -58,26 +57,14 @@ namespace BeatSaverDownloader
             }
         }
 
-
-        public void SongCore_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
+        private void Loader_SongsLoadedEvent(SongCore.Loader arg1, Dictionary<string, CustomPreviewBeatmapLevel> arg2)
         {
-            try
-            {
-                PlaylistsCollection.MatchSongsForAllPlaylists(true);
-            }
-            catch(Exception e)
-            {
-                Plugin.log.Critical("Unable to match songs for all playlists! Exception: "+e);
-            }
+            if (!PluginUI.instance.moreSongsButton.Interactable)
+                PluginUI.instance.moreSongsButton.Interactable = true;
         }
-
 
         public void OnUpdate()
         {
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                PlaylistsCollection.ReloadPlaylists();
-            }
         }
 
         public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode)

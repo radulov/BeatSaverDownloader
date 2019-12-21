@@ -1,0 +1,8 @@
+﻿<horizontal anchor-pos-y="-24" horizontal-fit="PreferredSize" vertical-fit="PreferredSize" spacing="2"> 
+<button id="downloadButton" interactable="~downloadInteractable"  on-click="downloadPressed" text="Download" pad="4" pref-height='8'></button>
+  <button id="uploaderButton" interactable="~uploaderInteractable" on-click="uploaderPressed" text="More By Mapper" pad="4" pref-height='8'></button>
+</horizontal>
+<!--<horizontal anchor-min-y="1" anchor-pos-y="-6" bg='panel-top' pad-left='10' pad-right='10' horizontal-fit='PreferredSize'>
+  <text text='Song Detail' align='Center' font-size='10'></text>
+</horizontal>
+-->

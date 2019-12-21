@@ -1,328 +1,570 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using VRUI;
-using UnityEngine.UI;
+﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Components;
 using HMUI;
-using TMPro;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Linq;
 using UnityEngine;
 using BeatSaverDownloader.Misc;
-using CustomUI.BeatSaber;
-using CustomUI.Utilities;
-using BeatSaverDownloader.UI.FlowCoordinators;
+using TMPro;
 namespace BeatSaverDownloader.UI.ViewControllers
 {
-    public enum TopButtonsState { Select, SortBy, Search };
-
-    public class MoreSongsListViewController : CustomListViewController
+    public class MoreSongsListViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
     {
-        public List<Song> songsList = new List<Song>();
+        public enum FilterMode { Search, BeatSaver, ScoreSaber }
+        public enum BeatSaverFilterOptions { Latest, Hot, Rating, Downloads, Plays, Uploader }
+        public enum ScoreSaberFilterOptions { Trending, Ranked, Difficulty, Qualified, Loved, Plays }
 
-        private int _lastSelectedRow;
-        private GameObject _loadingIndicator;
-        public event Action<int> didSelectRow;
+        internal FilterMode _currentFilter = FilterMode.ScoreSaber;
+        private FilterMode _previousFilter = FilterMode.ScoreSaber;
+        internal BeatSaverFilterOptions _currentBeatSaverFilter = BeatSaverFilterOptions.Hot;
+        internal ScoreSaberFilterOptions _currentScoreSaberFilter = ScoreSaberFilterOptions.Trending;
+        private BeatSaverSharp.User _currentUploader;
+        private string _currentSearch;
+        private string _fetchingDetails = "";
+        public override string ResourceName => "BeatSaverDownloader.UI.BSML.moreSongsList.bsml";
+        internal NavigationController navController;
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        [UIParams]
+        internal BeatSaberMarkupLanguage.Parser.BSMLParserParams parserParams;
 
-        public event Action searchButtonPressed;
+        [UIComponent("list")]
+        public CustomListTableData customListTableData;
+        [UIComponent("sortList")]
+        public CustomListTableData sortListTableData;
+        [UIComponent("sourceList")]
+        public CustomListTableData sourceListTableData;
+        [UIComponent("loadingModal")]
+        public ModalView loadingModal;
+        [UIComponent("sortModal")]
+        public ModalView sortModal;
+        [UIComponent("sortButton")]
+        private UnityEngine.UI.Button _sortButton;
+        [UIComponent("searchButton")]
+        private UnityEngine.UI.Button _searchButton;
+        [UIComponent("searchKeyboard")]
+        private ModalKeyboard _searchKeyboard;
 
-        public event Action sortByTop;
-        public event Action sortByNew;
-
-        public event Action sortByTrending;
-        public event Action sortByNewlyRanked;
-        public event Action sortByDifficulty;
-
-        public event Action pageUpPressed;
-        public event Action pageDownPressed;
-
-        private const string _mainButton = "CreditsButton";
-        private Button _sortByButton;
-        private Button _searchButton;
-
-        private Button _topButton;
-        private Button _newButton;
-
-        private Button _trendingButton;
-        private Button _newlyRankedButton;
-        private Button _difficultyButton;
-
-        private float _offset = 25f;
-        private bool _fixedOffset;
-
-        private bool initialized = false;
-        public override void __Activate(ActivationType activationType)
+        private string _searchValue = "";
+        [UIValue("searchValue")]
+        public string SearchValue
         {
-            base.__Activate(activationType);
-            //
-            if (!initialized && activationType == ActivationType.AddedToHierarchy)
+            get => _searchValue;
+            set
             {
-                (_pageUpButton.transform as RectTransform).anchoredPosition = new Vector2(0, 36);
-                _pageUpButton.onClick.AddListener(delegate ()
-                {
-                    pageUpPressed?.Invoke();
-                });
-                _pageDownButton.onClick.AddListener(delegate ()
-                {
-                    pageDownPressed?.Invoke();
-                });
+                _searchValue = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private List<StrongBox<BeatSaverSharp.Beatmap>> _songs = new List<StrongBox<BeatSaverSharp.Beatmap>>();
+        public List<Tuple<BeatSaverSharp.Beatmap, Texture2D>> _multiSelectSongs = new List<Tuple<BeatSaverSharp.Beatmap, Texture2D>>();
+        public LoadingControl loadingSpinner;
+        internal Progress<Double> fetchProgress;
 
-                _loadingIndicator = BeatSaberUI.CreateLoadingSpinner(rectTransform);
-                (_loadingIndicator.transform as RectTransform).anchorMin = new Vector2(0.5f, 0.5f);
-                (_loadingIndicator.transform as RectTransform).anchorMax = new Vector2(0.5f, 0.5f);
-                (_loadingIndicator.transform as RectTransform).anchoredPosition = new Vector2(0f, 0f);
-                _loadingIndicator.SetActive(true);
+        public Action<StrongBox<BeatSaverSharp.Beatmap>, Texture2D> didSelectSong;
+        public Action filterDidChange;
+        public Action multiSelectDidChange;
+        public bool Working
+        {
+            get { return _working; }
+            set { _working = value; if (!loadingSpinner) return; SetLoading(value); }
+        }
 
-                CreateButtons();
-                initialized = true;
-                _customListTableView.didSelectCellWithIdxEvent += DidSelectRowEvent;
+        private bool _working;
+        private uint lastPage = 0;
+        private bool _endOfResults = false;
+        private bool _multiSelectEnabled = false;
+        internal bool MultiSelectEnabled
+        {
+            get => _multiSelectEnabled;
+            set
+            {
+                _multiSelectEnabled = value;
+                ToggleMultiSelect(value);
+            }
+        }
+        internal void ToggleMultiSelect(bool value)
+        {
+            MultiSelectClear();
+            if (value)
+            {
+                customListTableData.tableView.selectionType = TableViewSelectionType.Multiple;
+                _sortButton.interactable = false;
+                _searchButton.interactable = false;
             }
             else
             {
-                _customListTableView.ReloadData();
+                _sortButton.interactable = true;
+                _searchButton.interactable = true;
+                customListTableData.tableView.selectionType = TableViewSelectionType.Single;
+            }
+
+        }
+        internal void MultiSelectClear()
+        {
+            customListTableData.tableView.ClearSelection();
+            _multiSelectSongs.Clear();
+        }
+        [UIAction("listSelect")]
+        internal void Select(TableView tableView, int row)
+        {
+            if (MultiSelectEnabled)
+                if (!_multiSelectSongs.Any(x => x.Item1 == _songs[row].Value))
+                    _multiSelectSongs.Add(_songs[row].Value, customListTableData.data[row].icon);
+            didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
+        }
+
+        internal void SortClosed()
+        {
+            Plugin.log.Info("Sort modal closed");
+            _currentFilter = _previousFilter;
+        }
+
+        [UIAction("sortPressed")]
+        internal void SortPressed()
+        {
+            sourceListTableData.tableView.ClearSelection();
+            sortListTableData.tableView.ClearSelection();
+        }
+        [UIAction("sortSelect")]
+        internal async void SelectedSortOption(TableView tableView, int row)
+        {
+            SortFilter filter = (sortListTableData.data[row] as SortFilterCellInfo).sortFilter;
+            _currentFilter = filter.Mode;
+            _previousFilter = filter.Mode;
+            _currentBeatSaverFilter = filter.BeatSaverOption;
+            _currentScoreSaberFilter = filter.ScoreSaberOption;
+            parserParams.EmitEvent("close-sortModal");
+            ClearData();
+            filterDidChange?.Invoke();
+            await GetNewPage(3);
+        }
+        [UIAction("sourceSelect")]
+        internal void SelectedSource(TableView tableView, int row)
+        {
+            parserParams.EmitEvent("close-sourceModal");
+            FilterMode filter = (sourceListTableData.data[row] as SourceCellInfo).filter;
+            _previousFilter = _currentFilter;
+            _currentFilter = filter;
+            SetupSortOptions();
+            parserParams.EmitEvent("open-sortModal");
+        }
+        [UIAction("searchPressed")]
+        internal async void SearchPressed(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            //   Plugin.log.Info("Search Pressed: " + text);
+            _currentSearch = text;
+            _currentFilter = FilterMode.Search;
+            ClearData();
+            filterDidChange?.Invoke();
+            await GetNewPage(3);
+
+        }
+        [UIAction("multiSelectToggle")]
+        internal void ToggleMultiSelect()
+        {
+            MultiSelectEnabled = !MultiSelectEnabled;
+            multiSelectDidChange?.Invoke();
+        }
+        [UIAction("abortClicked")]
+        internal void AbortPageFetch()
+        {
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = new CancellationTokenSource();
+            SetLoading(false);
+        }
+
+        internal async void SortByUser(BeatSaverSharp.User user)
+        {
+            _currentUploader = user;
+            _currentFilter = FilterMode.BeatSaver;
+            _currentBeatSaverFilter = BeatSaverFilterOptions.Uploader;
+            ClearData();
+            filterDidChange?.Invoke();
+            await GetNewPage(3);
+        }
+        [UIAction("pageUpPressed")]
+        internal void PageUpPressed()
+        {
+
+        }
+        [UIAction("pageDownPressed")]
+        internal async void PageDownPressed()
+        {
+            //Plugin.log.Info($"Number of cells {7}  visible cell last idx {customListTableData.tableView.visibleCells.Last().idx}  count {customListTableData.data.Count()}   math {customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx})");
+            if (!(customListTableData.data.Count >= 1) || _endOfResults || _multiSelectEnabled) return;
+            if ((customListTableData.data.Count() - customListTableData.tableView.visibleCells.Last().idx) <= 7)
+            {
+                await GetNewPage(4);
             }
         }
 
-        internal void Refresh()
+        internal void ClearData()
         {
-            _customListTableView.ReloadData();
-            if (_lastSelectedRow > -1)
-                _customListTableView.SelectCellWithIdx(_lastSelectedRow);
+            lastPage = 0;
+            customListTableData.data.Clear();
+            customListTableData.tableView.ReloadData();
+            customListTableData.tableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
+            _songs.Clear();
+            _multiSelectSongs.Clear();
+        }
+        protected override void DidDeactivate(DeactivationType deactivationType)
+        {
+            base.DidDeactivate(deactivationType);
         }
 
-        public void SetContent(List<Song> songs)
+        protected override void DidActivate(bool firstActivation, ActivationType type)
         {
-            if (songs == null && songsList != null)
-                songsList.Clear();
+            base.DidActivate(firstActivation, type);
+            if (!firstActivation)
+            {
+                InitSongList();
+            }
+        }
+
+        [UIAction("#post-parse")]
+        internal void SetupList()
+        {
+            (transform as RectTransform).sizeDelta = new Vector2(70, 0);
+            (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
+            (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
+            loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
+            Destroy(loadingSpinner.GetComponent<Touchable>());
+            fetchProgress = new Progress<double>(ProgressUpdate);
+            SetupSourceOptions();
+            sortModal._blockerClickedEvent += SortClosed;
+            KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
+            _searchKeyboard.keyboard.keys.Add(keyKey);
+            InitSongList();
+
+        }
+        internal async void InitSongList()
+        {
+            await GetNewPage(3);
+        }
+        public void ProgressUpdate(double progress)
+        {
+            SetLoading(true, progress, _fetchingDetails);
+        }
+
+        public void SetLoading(bool value, double progress = 0, string details = "")
+        {
+            if (value)
+            {
+                parserParams.EmitEvent("open-loadingModal");
+                loadingSpinner.ShowDownloadingProgress("Fetching More Songs... " + details, (float)progress);
+            }
             else
-                songsList = new List<Song>(songs);
-
-
-            _customListTableView.ReloadData();
-            _customListTableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
-            _lastSelectedRow = -1;
-
-        }
-
-        public void SetLoadingState(bool isLoading)
-        {
-            if (_loadingIndicator != null)
             {
-                _loadingIndicator.SetActive(isLoading);
+                parserParams.EmitEvent("close-loadingModal");
             }
         }
-
-        public void TogglePageUpDownButtons(bool pageUpEnabled, bool pageDownEnabled)
+        public void SetupSourceOptions()
         {
-            _pageUpButton.interactable = pageUpEnabled;
-            _pageDownButton.interactable = pageDownEnabled;
+            sourceListTableData.data.Clear();
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.BeatSaver, "BeatSaver", null, Sprites.BeatSaverIcon.texture));
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.ScoreSaber, "ScoreSaber", null, Sprites.ScoreSaberIcon.texture));
+            sourceListTableData.tableView.ReloadData();
         }
-
-        private void RevertButtonOffset(Button button)
+        public void SetupSortOptions()
         {
-            //       Plugin.log.Info("RevertButtonOffset");
-            RectTransform rectTransform = (button.transform as RectTransform);
-            Vector3 currentPosition = rectTransform.anchoredPosition;
-            rectTransform.anchoredPosition = new Vector2(currentPosition.x + _offset, currentPosition.y);
-        }
-
-        private void ApplyButtonOffset(Button button)
-        {
-            //       Plugin.log.Info("RevertButtonOffset");
-            RectTransform rectTransform = (button.transform as RectTransform);
-            Vector3 currentPosition = rectTransform.anchoredPosition;
-            rectTransform.anchoredPosition = new Vector2(currentPosition.x - _offset, currentPosition.y);
-        }
-
-        public override TableCell CellForIdx(TableView tableView, int row)
-        {
-            LevelListTableCell _tableCell = GetTableCell(false);
-
-            _tableCell.reuseIdentifier = "MoreSongsTableCell";
-            _tableCell.GetPrivateField<TextMeshProUGUI>("_songNameText").text = string.Format("{0} <size=80%>{1}</size>", songsList[row].songName, songsList[row].songSubName);
-            _tableCell.GetPrivateField<TextMeshProUGUI>("_authorText").text = songsList[row].songAuthorName + " <size=80%>[" + songsList[row].levelAuthorName + "]</size>";
-            _tableCell.SetPrivateField("_beatmapCharacteristicAlphas", new float[0]);
-            _tableCell.SetPrivateField("_beatmapCharacteristicImages", new UnityEngine.UI.Image[0]);
-            _tableCell.SetPrivateField("_bought", true);
-
-            StartCoroutine(LoadScripts.LoadSpriteCoroutine(songsList[row].coverURL, (cover) => { _tableCell.GetPrivateField<UnityEngine.UI.RawImage>("_coverRawImage").texture = cover.texture; }));
-            bool alreadyDownloaded = SongDownloader.Instance.IsSongDownloaded(songsList[row]);
-
-            if (alreadyDownloaded)
+            sortListTableData.data.Clear();
+            switch (_currentFilter)
             {
-                foreach (UnityEngine.UI.Image img in _tableCell.GetComponentsInChildren<UnityEngine.UI.Image>())
+                case FilterMode.BeatSaver:
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Latest), "Latest", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Rating), "Rating", "BeatSaver", Sprites.BeatSaverIcon.texture));
+
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Downloads), "Downloads", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Plays), "Plays", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    break;
+                case FilterMode.ScoreSaber:
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Trending), "Trending", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Ranked), "Ranked", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Qualified), "Qualified", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Loved), "Loved", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Difficulty), "Difficulty", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Plays), "Plays", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    break;
+            }
+            sortListTableData.tableView.ReloadData();
+        }
+        public void Cleanup()
+        {
+            AbortPageFetch();
+            parserParams.EmitEvent("closeAllModals");
+            ClearData();
+        }
+        internal async Task GetNewPage(uint count = 1)
+        {
+            if (Working) return;
+            _endOfResults = false;
+            Plugin.log.Info($"Fetching {count} new page(s)");
+            Working = true;
+            try
+            {
+                switch (_currentFilter)
                 {
-                    img.color = new Color(1f, 1f, 1f, 0.2f);
-                }
-                foreach (TextMeshProUGUI text in _tableCell.GetComponentsInChildren<TextMeshProUGUI>())
-                {
-                    text.faceColor = new Color(1f, 1f, 1f, 0.2f);
+                    case FilterMode.BeatSaver:
+                        await GetPagesBeatSaver(count);
+                        break;
+                    case FilterMode.ScoreSaber:
+                        await GetPagesScoreSaber(count);
+                        break;
+                    case FilterMode.Search:
+                        await GetPagesSearch(count);
+                        break;
                 }
             }
-
-            return _tableCell;
+            catch (Exception e)
+            {
+                if (e is TaskCanceledException)
+                    Plugin.log.Warn("Page Fetching Aborted.");
+                else
+                    Plugin.log.Critical("Failed to fetch new pages! \n" + e);
+            }
+            Working = false;
         }
-
-        private void CreateButtons()
+        internal async Task GetPagesScoreSaber(uint count)
         {
-            _sortByButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(15f, 36.5f), new Vector2(30f, 6f), () => { SelectTopButtons(TopButtonsState.SortBy); }, "Sort by");
-            _sortByButton.SetButtonTextSize(3f);
-
-            _searchButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(-15, 36.5f), new Vector2(30f, 6f), () =>
+            List<ScoreSaberSharp.Song> newMaps = new List<ScoreSaberSharp.Song>();
+            for (uint i = 0; i < count; ++i)
             {
-                searchButtonPressed?.Invoke();
-                SelectTopButtons(TopButtonsState.Search);
-            }, "Search");
-            _searchButton.SetButtonTextSize(3f);
+                _fetchingDetails = $"({i + 1}/{count})";
+                ScoreSaberSharp.Songs page = null;
+                switch (_currentScoreSaberFilter)
+                {
+                    case ScoreSaberFilterOptions.Trending:
+                        page = await ScoreSaberSharp.ScoreSaber.Trending(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case ScoreSaberFilterOptions.Ranked:
+                        page = await ScoreSaberSharp.ScoreSaber.Ranked(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case ScoreSaberFilterOptions.Qualified:
+                        page = await ScoreSaberSharp.ScoreSaber.Qualified(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case ScoreSaberFilterOptions.Loved:
+                        page = await ScoreSaberSharp.ScoreSaber.Loved(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case ScoreSaberFilterOptions.Plays:
+                        page = await ScoreSaberSharp.ScoreSaber.Plays(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case ScoreSaberFilterOptions.Difficulty:
+                        page = await ScoreSaberSharp.ScoreSaber.Difficulty(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
 
-            _topButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(-20f - _offset, 36.5f), new Vector2(20f, 6f), () =>
+                }
+                lastPage++;
+                if (page.songs?.Count == 0)
+                {
+                    _endOfResults = true;
+                }
+                if (page.songs != null)
+                    newMaps.AddRange(page.songs);
+                if (_endOfResults) break;
+            }
+            foreach (var song in newMaps)
             {
-                sortByTop?.Invoke();
-                SelectTopButtons(TopButtonsState.Select);
-            },
-            "Hot");
-
-            _topButton.SetButtonTextSize(3f);
-            _topButton.ToggleWordWrapping(false);
-            _topButton.gameObject.SetActive(false);
-
-            _newButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(0f - _offset, 36.5f), new Vector2(20f, 6f), () =>
+                BeatSaverSharp.Beatmap fromScoreSaber = ConstructBeatmapFromScoreSaber(song);
+                _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(fromScoreSaber));
+                if(SongDownloader.Instance.IsSongDownloaded(song.id))
+                customListTableData.data.Add(new ScoreSaberCustomSongCellInfo(song, CellDidSetImage, $"<#7F7F7F>{song.name}", song.levelAuthorName));
+                else
+                    customListTableData.data.Add(new ScoreSaberCustomSongCellInfo(song, CellDidSetImage, song.name, song.levelAuthorName));
+                customListTableData.tableView.ReloadData();
+            }
+            _fetchingDetails = "";
+        }
+        internal async Task GetPagesBeatSaver(uint count)
+        {
+            List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
+            for (uint i = 0; i < count; ++i)
             {
-                sortByNew?.Invoke();
-                SelectTopButtons(TopButtonsState.Select);
-            }, "Newest");
-
-            _newButton.SetButtonTextSize(3f);
-            _newButton.ToggleWordWrapping(false);
-            _newButton.gameObject.SetActive(false);
-
-            _trendingButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(20f - _offset, 36.5f), new Vector2(20f, 6f), () =>
+                _fetchingDetails = $"({i + 1}/{count})";
+                BeatSaverSharp.Page page = null;
+                switch (_currentBeatSaverFilter)
+                {
+                    case BeatSaverFilterOptions.Hot:
+                        page = await BeatSaverSharp.BeatSaver.Hot(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case BeatSaverFilterOptions.Latest:
+                        page = await BeatSaverSharp.BeatSaver.Latest(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case BeatSaverFilterOptions.Rating:
+                        page = await BeatSaverSharp.BeatSaver.Rating(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case BeatSaverFilterOptions.Plays:
+                        page = await BeatSaverSharp.BeatSaver.Plays(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case BeatSaverFilterOptions.Uploader:
+                        page = await _currentUploader.Beatmaps(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                    case BeatSaverFilterOptions.Downloads:
+                        page = await BeatSaverSharp.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        break;
+                }
+                lastPage++;
+                if (page.TotalDocs == 0 || page.NextPage == null)
+                {
+                    _endOfResults = true;
+                }
+                if (page.Docs != null)
+                    newMaps.AddRange(page.Docs);
+                if (_endOfResults) break;
+            }
+            newMaps.ForEach(x => _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(x)));
+            foreach (var song in newMaps)
             {
-                sortByTrending?.Invoke();
-                SelectTopButtons(TopButtonsState.Select);
-            }, "Trending");
-
-            _trendingButton.SetButtonTextSize(3f);
-            _trendingButton.ToggleWordWrapping(false);
-            _trendingButton.gameObject.SetActive(false);
-
-            _newlyRankedButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(42f - _offset, 36.5f), new Vector2(25f, 6f), () =>
+                if(SongDownloader.Instance.IsSongDownloaded(song.Hash))
+                customListTableData.data.Add(new BeatSaverCustomSongCellInfo(song, CellDidSetImage, $"<#7F7F7F>{song.Name}", song.Uploader.Username));
+                else
+                    customListTableData.data.Add(new BeatSaverCustomSongCellInfo(song, CellDidSetImage, song.Name, song.Uploader.Username));
+                customListTableData.tableView.ReloadData();
+            }
+            _fetchingDetails = "";
+        }
+        internal async Task GetPagesSearch(uint count)
+        {
+            if (_currentSearch.StartsWith("Key:"))
             {
-                sortByNewlyRanked?.Invoke();
-                SelectTopButtons(TopButtonsState.Select);
-            },
-           "Newly Ranked");
-            _newlyRankedButton.SetButtonTextSize(3f);
-            _newlyRankedButton.ToggleWordWrapping(false);
-            _newlyRankedButton.gameObject.SetActive(false);
-
-            _difficultyButton = BeatSaberUI.CreateUIButton(rectTransform, _mainButton, new Vector2(64f - _offset, 36.5f), new Vector2(20f, 6f), () =>
+                string key = _currentSearch.Split(':')[1];
+                _fetchingDetails = $" (By Key:{key}";
+                BeatSaverSharp.Beatmap keyMap = await BeatSaverSharp.BeatSaver.Key(key, fetchProgress);
+                if (keyMap != null)
+                {
+                    _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(keyMap));
+                    if (SongDownloader.Instance.IsSongDownloaded(keyMap.Hash))
+                        customListTableData.data.Add(new BeatSaverCustomSongCellInfo(keyMap, CellDidSetImage, $"<#7F7F7F>{keyMap.Name}", keyMap.Uploader.Username));
+                    else
+                        customListTableData.data.Add(new BeatSaverCustomSongCellInfo(keyMap, CellDidSetImage, keyMap.Name, keyMap.Uploader.Username));
+                    customListTableData.tableView.ReloadData();
+                }
+                _fetchingDetails = "";
+                return;
+            }
+            List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
+            for (uint i = 0; i < count; ++i)
             {
-                sortByDifficulty?.Invoke();
-                SelectTopButtons(TopButtonsState.Select);
-            },
-           "Difficulty");
-            _difficultyButton.SetButtonTextSize(3f);
-            _difficultyButton.ToggleWordWrapping(false);
-            _difficultyButton.gameObject.SetActive(false);
+                _fetchingDetails = $"({i + 1}/{count})";
+                BeatSaverSharp.Page page = await BeatSaverSharp.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
+                lastPage++;
+                if (page.TotalDocs == 0 || page.NextPage == null)
+                {
+                    _endOfResults = true;
+                }
+                if (page.Docs != null)
+                    newMaps.AddRange(page.Docs);
+                if (_endOfResults) break;
+            }
+            newMaps.ForEach(x => _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(x)));
+            foreach (var song in newMaps)
+            {
+                if (SongDownloader.Instance.IsSongDownloaded(song.Hash))
+                    customListTableData.data.Add(new BeatSaverCustomSongCellInfo(song, CellDidSetImage, $"<#7F7F7F>{song.Name}", song.Uploader.Username));
+                else
+                    customListTableData.data.Add(new BeatSaverCustomSongCellInfo(song, CellDidSetImage, song.Name, song.Uploader.Username));
+                customListTableData.tableView.ReloadData();
+            }
+            _fetchingDetails = "";
 
         }
-
-
-        public void SelectTopButtons(TopButtonsState _newState)
+        public static BeatSaverSharp.Beatmap ConstructBeatmapFromScoreSaber(ScoreSaberSharp.Song song)
         {
-            switch (_newState)
+            BeatSaverSharp.Beatmap beatSaverSong = new BeatSaverSharp.Beatmap
             {
-                case TopButtonsState.Select:
-                    {
-                        _sortByButton.gameObject.SetActive(true);
-                        _searchButton.gameObject.SetActive(true);
-                        _topButton.gameObject.SetActive(false);
-                        _newButton.gameObject.SetActive(false);
+                Name = song.name,
+                CoverURL = $"scoresaber_{song.image}",
+                Hash = $"scoresaber_{song.id}"
+            };
 
-                        _trendingButton.gameObject.SetActive(false);
-                        _newlyRankedButton.gameObject.SetActive(false);
-                        _difficultyButton.gameObject.SetActive(false);
-                        //       TogglePageUpDownButtons(true, true);
-                    }; break;
-                case TopButtonsState.SortBy:
-                    {
-                        _sortByButton.gameObject.SetActive(false);
-                        _searchButton.gameObject.SetActive(false);
+            return beatSaverSong;
+        }
+        internal void CellDidSetImage(CustomListTableData.CustomCellInfo cell)
+        {
+            foreach (var visibleCell in customListTableData.tableView.visibleCells)
+            {
+                LevelListTableCell levelCell = visibleCell as LevelListTableCell;
+                if (levelCell.GetField<TextMeshProUGUI>("_songNameText")?.text == cell.text)
+                {
+                    customListTableData.tableView.RefreshCellsContent();
+                    return;
+                }
 
-                        _topButton.gameObject.SetActive(true);
-                        _newButton.gameObject.SetActive(true);
-
-                        _trendingButton.gameObject.SetActive(true);
-                        _newlyRankedButton.gameObject.SetActive(true);
-                        _difficultyButton.gameObject.SetActive(true);
-                        //      TogglePageUpDownButtons(false, false);
-                    }; break;
-                case TopButtonsState.Search:
-                    {
-                        _sortByButton.gameObject.SetActive(false);
-                        _searchButton.gameObject.SetActive(false);
-
-                        _topButton.gameObject.SetActive(false);
-                        _newButton.gameObject.SetActive(false);
-
-                        _trendingButton.gameObject.SetActive(false);
-                        _newlyRankedButton.gameObject.SetActive(false);
-                        _difficultyButton.gameObject.SetActive(false);
-
-                    }; break;
             }
         }
 
-        public override float CellSize()
-        {
-            return 10f;
-        }
-        public override int NumberOfCells()
-        {
-            return Math.Min(songsList.Count, MoreSongsFlowCoordinator.songsPerPage);
-        }
-        new private void DidSelectRowEvent(TableView sender, int row)
-        {
+    }
+    public class SortFilter
+    {
+        public MoreSongsListViewController.FilterMode Mode = MoreSongsListViewController.FilterMode.BeatSaver;
+        public MoreSongsListViewController.BeatSaverFilterOptions BeatSaverOption = MoreSongsListViewController.BeatSaverFilterOptions.Hot;
+        public MoreSongsListViewController.ScoreSaberFilterOptions ScoreSaberOption = MoreSongsListViewController.ScoreSaberFilterOptions.Trending;
 
-            if (!_fixedOffset)
-            {
-                RevertButtonOffset(_topButton);
-                RevertButtonOffset(_newButton);
-                RevertButtonOffset(_trendingButton);
-                RevertButtonOffset(_newlyRankedButton);
-                RevertButtonOffset(_difficultyButton);
-                _fixedOffset = true;
-            }
-
-            _lastSelectedRow = row;
-            didSelectRow?.Invoke(row);
-        }
-
-        protected override void DidDeactivate(DeactivationType type)
+        public SortFilter(MoreSongsListViewController.FilterMode mode, MoreSongsListViewController.BeatSaverFilterOptions beatSaverOption = default, MoreSongsListViewController.ScoreSaberFilterOptions scoreSaberOption = default)
         {
-            if (_fixedOffset)
-            {
-                ApplyButtonOffset(_topButton);
-                ApplyButtonOffset(_newButton);
-                ApplyButtonOffset(_trendingButton);
-                ApplyButtonOffset(_newlyRankedButton);
-                ApplyButtonOffset(_difficultyButton);
-                _fixedOffset = false;
-            }
-            _lastSelectedRow = -1;
+            Mode = mode;
+            BeatSaverOption = beatSaverOption;
+            ScoreSaberOption = scoreSaberOption;
         }
-
-        internal void ResetOffset()
+    }
+    public class SortFilterCellInfo : CustomListTableData.CustomCellInfo
+    {
+        public SortFilter sortFilter;
+        public SortFilterCellInfo(SortFilter filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
         {
-            if (_fixedOffset)
-            {
-                ApplyButtonOffset(_topButton);
-                ApplyButtonOffset(_newButton);
-                ApplyButtonOffset(_trendingButton);
-                ApplyButtonOffset(_newlyRankedButton);
-                ApplyButtonOffset(_difficultyButton);
-                _fixedOffset = false;
-            }
-            _lastSelectedRow = -1;
+            sortFilter = filter;
+        }
+    }
+    public class SourceCellInfo : CustomListTableData.CustomCellInfo
+    {
+        public MoreSongsListViewController.FilterMode filter;
+        public SourceCellInfo(MoreSongsListViewController.FilterMode filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
+        {
+            this.filter = filter;
+        }
+    }
+    public class BeatSaverCustomSongCellInfo : CustomListTableData.CustomCellInfo
+    {
+        protected BeatSaverSharp.Beatmap _song;
+        Action<CustomListTableData.CustomCellInfo> _callback;
+        public BeatSaverCustomSongCellInfo(BeatSaverSharp.Beatmap song, Action<CustomListTableData.CustomCellInfo> callback, string text, string subtext = null) : base(text, subtext, null)
+        {
+            _song = song;
+            _callback = callback;
+            LoadImage();
+        }
+        protected async void LoadImage()
+        {
+            byte[] image = await _song.FetchCoverImage();
+            Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+            base.icon = icon;
+            _callback(this);
+        }
+    }
+
+    public class ScoreSaberCustomSongCellInfo : CustomListTableData.CustomCellInfo
+    {
+        private new ScoreSaberSharp.Song _song;
+        Action<CustomListTableData.CustomCellInfo> _callback;
+        public ScoreSaberCustomSongCellInfo(ScoreSaberSharp.Song song, Action<CustomListTableData.CustomCellInfo> callback, string text, string subtext = null) : base(text, subtext, null)
+        {
+            _song = song;
+            _callback = callback;
+            LoadImage();
+        }
+        protected async void LoadImage()
+        {
+            byte[] image = await _song.FetchCoverImage();
+            Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+            base.icon = icon;
+            _callback(this);
         }
     }
 }

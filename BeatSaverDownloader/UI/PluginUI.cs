@@ -1,132 +1,54 @@
-﻿using System.Collections.Generic;
+﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage.MenuButtons;
+using HMUI;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using BeatSaverDownloader.UI.FlowCoordinators;
-using CustomUI.BeatSaber;
-using CustomUI.MenuButton;
-using TMPro;
-using BeatSaverDownloader.Misc;
-using System;
-using CustomUI.Settings;
-using System.Collections;
 
 namespace BeatSaverDownloader.UI
 {
-    class PluginUI : MonoBehaviour
+    public class PluginUI : PersistentSingleton<PluginUI>
     {
-        public bool initialized = false;
+        public MenuButton moreSongsButton;
+        internal MoreSongsFlowCoordinator _moreSongsFlowCooridinator;
+        public static GameObject _levelDetailClone;
 
-        private static PluginUI _instance = null;
-        public static PluginUI Instance
+        internal void Setup()
         {
-            get
-            {
-                if (!_instance)
-                {
-                    _instance = new GameObject("BeatSaverDownloader").AddComponent<PluginUI>();
-                    DontDestroyOnLoad(_instance.gameObject);
-                }
-                return _instance;
-            }
-            private set
-            {
-                _instance = value;
-            }
+            moreSongsButton = new MenuButton("More Songs", "Download More Songs from here!", MoreSongsButtonPressed, false);
+            MenuButtons.instance.RegisterButton(moreSongsButton);
         }
 
-        public MoreSongsFlowCoordinator moreSongsFlowCoordinator;
-        public MorePlaylistsFlowCoordinator morePlaylistsFlowCoordinator;
-        public ReviewFlowCoordinator reviewFlowCoordinator;
-
-        private MenuButton _moreSongsButton;
-
-        public void OnLoad()
+        internal static void SetupLevelDetailClone()
         {
-            initialized = false;
-
-            StartCoroutine(SetupUI());
-            
-            if (!SongCore.Loader.AreSongsLoaded)
-                SongCore.Loader.SongsLoadedEvent += SongLoader_SongsLoadedEvent;
-            else
-                SongLoader_SongsLoadedEvent(null, SongCore.Loader.CustomLevels);
-                
-            StartCoroutine(ScrappedData.Instance.DownloadScrappedData((List<ScrappedSong> songs) => {
-                if (PlaylistsCollection.loadedPlaylists.Any(x => x.playlistTitle == "Your favorite songs"))
-                {
-                    PlaylistsCollection.loadedPlaylists.First(x => x.playlistTitle == "Your favorite songs").SavePlaylist("Playlists\\favorites.json");
-                }
-            }));
-        }
-        
-        private void SongLoader_SongsLoadedEvent(SongCore.Loader arg1, Dictionary<string, CustomPreviewBeatmapLevel> arg2)
-        {
-            SongCore.Loader.SongsLoadedEvent -= SongLoader_SongsLoadedEvent;
-            _moreSongsButton.interactable = true;
-        }
-        
-        private IEnumerator SetupUI()
-        {
-            if (initialized) yield break;
-
-            var downloaderSubMenu = SettingsUI.CreateSubMenu("Downloader");
-
-            var disableDeleteButton = downloaderSubMenu.AddBool("Disable delete button");
-            disableDeleteButton.GetValue += delegate { return PluginConfig.disableDeleteButton; };
-            disableDeleteButton.SetValue += delegate (bool value) { PluginConfig.disableDeleteButton = value; PluginConfig.SaveConfig(); };
-
-            var deleteToRecycleBin = downloaderSubMenu.AddBool("Delete to Recycle Bin");
-            deleteToRecycleBin.GetValue += delegate { return PluginConfig.deleteToRecycleBin; };
-            deleteToRecycleBin.SetValue += delegate (bool value) { PluginConfig.deleteToRecycleBin = value; PluginConfig.SaveConfig(); };
-
-            var enableSongIcons = downloaderSubMenu.AddBool("Enable additional song icons");
-            enableSongIcons.GetValue += delegate { return PluginConfig.enableSongIcons; };
-            enableSongIcons.SetValue += delegate (bool value) { PluginConfig.enableSongIcons = value; PluginConfig.SaveConfig(); };
-
-            var rememberLastPackAndSong = downloaderSubMenu.AddBool("Remember last pack and song");
-            rememberLastPackAndSong.GetValue += delegate { return PluginConfig.rememberLastPackAndSong; };
-            rememberLastPackAndSong.SetValue += delegate (bool value) { PluginConfig.rememberLastPackAndSong = value; PluginConfig.SaveConfig(); };
-
-            var maxSimultaneousDownloads = downloaderSubMenu.AddInt("Max simultaneous downloads", 1, 10, 1);
-            maxSimultaneousDownloads.GetValue += delegate { return PluginConfig.maxSimultaneousDownloads; };
-            maxSimultaneousDownloads.SetValue += delegate (int value) { PluginConfig.maxSimultaneousDownloads = value; PluginConfig.SaveConfig(); };
-
-            var fastScrollSpeed = downloaderSubMenu.AddInt("Fast scroll speed", 2, 20, 1);
-            fastScrollSpeed.GetValue += delegate { return PluginConfig.fastScrollSpeed; };
-            fastScrollSpeed.SetValue += delegate (int value) { PluginConfig.fastScrollSpeed = value; PluginConfig.SaveConfig(); };
-
-            _moreSongsButton = MenuButtonUI.AddButton("More songs", "Download more songs from BeatSaver.com!", BeatSaverButtonPressed);
-            //bananbread songloader loaded menubutton
-            _moreSongsButton.interactable = SongCore.Loader.AreSongsLoaded;
-
-            MenuButtonUI.AddButton("More playlists", PlaylistsButtonPressed);
-
-            yield return null;
-
-            initialized = true;
+            _levelDetailClone = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().First(x => x.name == "LevelDetail").gameObject);
+            _levelDetailClone.gameObject.SetActive(false);
+            Destroy(_levelDetailClone.GetComponent<StandardLevelDetailView>());
+            var bsmlObjects = _levelDetailClone.GetComponentsInChildren<RectTransform>().Where(x => x.gameObject.name.StartsWith("BSML"));
+            var hoverhints = _levelDetailClone.GetComponentsInChildren<HoverHint>();
+            var localHoverHints = _levelDetailClone.GetComponentsInChildren<LocalizedHoverHint>();
+            foreach (var bsmlObject in bsmlObjects)
+                Destroy(bsmlObject.gameObject);
+            foreach (var hoverhint in hoverhints)
+                Destroy(hoverhint);
+            foreach (var hoverhint in localHoverHints)
+                Destroy(hoverhint);
+            Destroy(_levelDetailClone.transform.Find("Level").Find("FavoritesToggle").gameObject);
+            Destroy(_levelDetailClone.transform.Find("PlayContainer").Find("PlayButtons").gameObject);
+            Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxCombo").gameObject);
+            Destroy(_levelDetailClone.transform.Find("Stats").Find("Highscore").gameObject);
+            Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxRank").gameObject);
         }
 
-        public void BeatSaverButtonPressed()
+        internal void MoreSongsButtonPressed()
         {
-            if (moreSongsFlowCoordinator == null)
-                moreSongsFlowCoordinator = new GameObject("MoreSongsFlowCoordinator").AddComponent<MoreSongsFlowCoordinator>();
-
-            MainFlowCoordinator mainFlow = Resources.FindObjectsOfTypeAll<MainFlowCoordinator>().First();
-
-            mainFlow.InvokeMethod("PresentFlowCoordinator", moreSongsFlowCoordinator, null, false, false);
+            ShowMoreSongsFlow();
         }
 
-        public void PlaylistsButtonPressed()
+        internal void ShowMoreSongsFlow()
         {
-            if (morePlaylistsFlowCoordinator == null)
-                morePlaylistsFlowCoordinator = new GameObject("MorePlaylistsFlowCoordinator").AddComponent<MorePlaylistsFlowCoordinator>();
-
-            MainFlowCoordinator mainFlow = Resources.FindObjectsOfTypeAll<MainFlowCoordinator>().First();
-
-            mainFlow.InvokeMethod("PresentFlowCoordinator", morePlaylistsFlowCoordinator, null, false, false);
+            if (_moreSongsFlowCooridinator == null)
+                _moreSongsFlowCooridinator = BeatSaberUI.CreateFlowCoordinator<MoreSongsFlowCoordinator>();
+            BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator.PresentFlowCoordinator(_moreSongsFlowCooridinator); // ("PresentFlowCoordinator", _moreSongsFlowCooridinator, null, false, false);
         }
-
     }
 }
