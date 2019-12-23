@@ -177,7 +177,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             cancellationTokenSource.Cancel();
             cancellationTokenSource.Dispose();
             cancellationTokenSource = new CancellationTokenSource();
-            SetLoading(false);
+            Working = false;
         }
 
         internal async void SortByUser(BeatSaverSharp.User user)
@@ -242,14 +242,20 @@ namespace BeatSaverDownloader.UI.ViewControllers
             SetupSourceOptions();
             sortModal._blockerClickedEvent += SortClosed;
             KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
+            keyKey.keyaction += KeyKeyPressed;
             _searchKeyboard.keyboard.keys.Add(keyKey);
             InitSongList();
 
+        }
+        internal void KeyKeyPressed(KEYBOARD.KEY key)
+        {
+            _searchKeyboard.keyboard.KeyboardText.text = "Key:";
         }
         internal async void InitSongList()
         {
             await GetNewPage(3);
         }
+
         public void ProgressUpdate(double progress)
         {
             SetLoading(true, progress, _fetchingDetails);
@@ -439,7 +445,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 string key = _currentSearch.Split(':')[1];
                 _fetchingDetails = $" (By Key:{key}";
                 BeatSaverSharp.Beatmap keyMap = await Plugin.BeatSaver.Key(key, fetchProgress);
-                if (keyMap != null)
+                if (keyMap != null && !_songs.Any(x => x.Value == keyMap))
                 {
                     _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(keyMap));
                     if (SongDownloader.Instance.IsSongDownloaded(keyMap.Hash))
