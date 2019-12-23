@@ -15,11 +15,7 @@ namespace BeatSaverDownloader
     {
         public static Plugin instance;
         public static IPA.Logging.Logger log;
-
-        public string UserAgent
-        {
-            get => $"BeatSaverDownloader/{Assembly.GetExecutingAssembly().GetName().Version}";
-        }
+        public static BeatSaverSharp.BeatSaver BeatSaver;
 
         public void Init(object nullObject, IPA.Logging.Logger logger)
         {
@@ -33,6 +29,9 @@ namespace BeatSaverDownloader
 
         public void OnApplicationStart()
         {
+            BeatSaver = new BeatSaverSharp.BeatSaver(
+    new BeatSaverSharp.HttpOptions { ApplicationName = "BeatSaverDownloader", Version = Assembly.GetExecutingAssembly().GetName().Version });
+
             instance = this;
             PluginConfig.LoadConfig();
             Sprites.ConvertToSprites();

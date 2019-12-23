@@ -392,22 +392,22 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 switch (_currentBeatSaverFilter)
                 {
                     case BeatSaverFilterOptions.Hot:
-                        page = await BeatSaverSharp.BeatSaver.Hot(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Hot(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Latest:
-                        page = await BeatSaverSharp.BeatSaver.Latest(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Latest(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Rating:
-                        page = await BeatSaverSharp.BeatSaver.Rating(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Rating(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Plays:
-                        page = await BeatSaverSharp.BeatSaver.Plays(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Plays(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Uploader:
                         page = await _currentUploader.Beatmaps(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Downloads:
-                        page = await BeatSaverSharp.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                 }
                 lastPage++;
@@ -436,7 +436,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             {
                 string key = _currentSearch.Split(':')[1];
                 _fetchingDetails = $" (By Key:{key}";
-                BeatSaverSharp.Beatmap keyMap = await BeatSaverSharp.BeatSaver.Key(key, fetchProgress);
+                BeatSaverSharp.Beatmap keyMap = await Plugin.BeatSaver.Key(key, fetchProgress);
                 if (keyMap != null)
                 {
                     _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(keyMap));
@@ -453,7 +453,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             for (uint i = 0; i < count; ++i)
             {
                 _fetchingDetails = $"({i + 1}/{count})";
-                BeatSaverSharp.Page page = await BeatSaverSharp.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
+                BeatSaverSharp.Page page = await Plugin.BeatSaver.Search(_currentSearch, lastPage, cancellationTokenSource.Token, fetchProgress);
                 lastPage++;
                 if (page.TotalDocs == 0 || page.NextPage == null)
                 {
@@ -477,7 +477,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         public static BeatSaverSharp.Beatmap ConstructBeatmapFromScoreSaber(ScoreSaberSharp.Song song)
         {
-            BeatSaverSharp.Beatmap beatSaverSong = new BeatSaverSharp.Beatmap(hash: song.id);
+            BeatSaverSharp.Beatmap beatSaverSong = new BeatSaverSharp.Beatmap(Plugin.BeatSaver, hash: song.id);
 
             return beatSaverSong;
         }
