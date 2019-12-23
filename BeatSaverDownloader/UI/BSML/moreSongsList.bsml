@@ -26,6 +26,6 @@
         <button id='abortButton' on-click='abortClicked' text='Abort' anchor-pos-y='-24' pref-height='5' pad='4' ></button>
       </modal>
     </list>
-    <page-button event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
+    <page-button id='songsPageDown' event-click='list#PageDown' on-click='pageDownPressed' direction='Down'></page-button>
   </vertical>
 </bg>

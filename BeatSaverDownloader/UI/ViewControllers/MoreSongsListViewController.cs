@@ -71,7 +71,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public bool Working
         {
             get { return _working; }
-            set { _working = value; if (!loadingSpinner) return; SetLoading(value); }
+            set { _working = value; _songsDownButton.interactable = !value; if (!loadingSpinner) return; SetLoading(value); }
         }
 
         private bool _working;
@@ -194,6 +194,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
 
         }
+        [UIComponent("songsPageDown")]
+        private UnityEngine.UI.Button _songsDownButton;
         [UIAction("pageDownPressed")]
         internal async void PageDownPressed()
         {
