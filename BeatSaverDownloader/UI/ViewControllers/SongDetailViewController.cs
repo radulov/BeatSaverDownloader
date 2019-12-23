@@ -113,14 +113,13 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 {
                     await song.Value.Populate();
                 }
-                catch (Exception ex)
+                catch (BeatSaverSharp.Exceptions.InvalidPartialException ex)
                 {
-                    if (ex is BeatSaverSharp.Exceptions.InvalidPartialException)
-                    {
-                        _songNameText.text = "Song Not Found";
-                        return;
-                    }
+                    Plugin.log.Warn("Map not found on BeatSaver");
+                    _songNameText.text = "Song Not Found";
+                    return;
                 }
+
             }
 
             _currentSong = song.Value;

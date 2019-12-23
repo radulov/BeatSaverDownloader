@@ -75,9 +75,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
                     {
                         await map.Populate();
                     }
-                    catch(Exception ex)
+                    catch(BeatSaverSharp.Exceptions.InvalidPartialException ex)
                     {
-                        if (ex is BeatSaverSharp.Exceptions.InvalidPartialException)
+                        Plugin.log.Warn("Map not found on BeatSaver");
                             continue;
                     }
                 }
