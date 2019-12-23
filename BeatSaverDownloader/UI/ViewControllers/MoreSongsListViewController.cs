@@ -477,12 +477,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         public static BeatSaverSharp.Beatmap ConstructBeatmapFromScoreSaber(ScoreSaberSharp.Song song)
         {
-            BeatSaverSharp.Beatmap beatSaverSong = new BeatSaverSharp.Beatmap
-            {
-                Name = song.name,
-                CoverURL = $"scoresaber_{song.image}",
-                Hash = $"scoresaber_{song.id}"
-            };
+            BeatSaverSharp.Beatmap beatSaverSong = new BeatSaverSharp.Beatmap(hash: song.id);
 
             return beatSaverSong;
         }

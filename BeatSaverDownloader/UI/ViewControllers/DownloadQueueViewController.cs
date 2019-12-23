@@ -67,11 +67,19 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 bool downloaded = false;
                 Tuple<BeatSaverSharp.Beatmap, Texture2D> pair = songs[i];
                 BeatSaverSharp.Beatmap map = pair.Item1;
-                if (map.Hash.StartsWith("scoresaber"))
+                if (map.Partial)
                 {
-                    downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash.Split('_')[1]);
+                    downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash);
                     if (downloaded) continue;
-                    map = await BeatSaverSharp.BeatSaver.Hash(map.Hash.Split('_')[1]);
+                    try
+                    {
+                        await map.Populate();
+                    }
+                    catch(Exception ex)
+                    {
+                        if (ex is BeatSaverSharp.Exceptions.InvalidPartialException)
+                            continue;
+                    }
                 }
                 bool inQueue = queueItems.Any(x => (x as DownloadQueueItem).beatmap == map);
                 downloaded = SongDownloader.Instance.IsSongDownloaded(map.Hash);

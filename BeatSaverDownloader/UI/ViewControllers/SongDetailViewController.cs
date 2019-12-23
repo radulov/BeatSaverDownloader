@@ -38,7 +38,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private TextMeshProUGUI _bombsText;
 
         private bool _downloadInteractable = false;
-        
+
         public Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
         public Action<BeatSaverSharp.User> didPressUploader;
         public Action<string> setDescription;
@@ -107,11 +107,24 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         internal async void Initialize(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover)
         {
-            if (song.Value.Hash.StartsWith("scoresaber"))
-                song.Value = await BeatSaverSharp.BeatSaver.Hash(song.Value.Hash.Split('_')[1]);
+            if (song.Value.Partial)
+            {
+                try
+                {
+                    await song.Value.Populate();
+                }
+                catch (Exception ex)
+                {
+                    if (ex is BeatSaverSharp.Exceptions.InvalidPartialException)
+                    {
+                        _songNameText.text = "Song Not Found";
+                        return;
+                    }
+                }
+            }
 
-                _currentSong = song.Value;
-            
+            _currentSong = song.Value;
+
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
                 _coverImage.texture = cover;
