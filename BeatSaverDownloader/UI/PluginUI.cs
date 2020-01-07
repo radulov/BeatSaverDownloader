@@ -20,7 +20,7 @@ namespace BeatSaverDownloader.UI
 
         internal static void SetupLevelDetailClone()
         {
-            _levelDetailClone = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().First(x => x.name == "LevelDetail").gameObject);
+            _levelDetailClone = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<StandardLevelDetailView>().First(x => x.gameObject.name == "LevelDetail").gameObject);
             _levelDetailClone.gameObject.SetActive(false);
             Destroy(_levelDetailClone.GetComponent<StandardLevelDetailView>());
             var bsmlObjects = _levelDetailClone.GetComponentsInChildren<RectTransform>().Where(x => x.gameObject.name.StartsWith("BSML"));
@@ -32,7 +32,7 @@ namespace BeatSaverDownloader.UI
                 Destroy(hoverhint);
             foreach (var hoverhint in localHoverHints)
                 Destroy(hoverhint);
-            Destroy(_levelDetailClone.transform.Find("Level").Find("FavoritesToggle").gameObject);
+            Destroy(_levelDetailClone.transform.Find("LevelInfo").Find("FavoritesToggle").gameObject);
             Destroy(_levelDetailClone.transform.Find("PlayContainer").Find("PlayButtons").gameObject);
             Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxCombo").gameObject);
             Destroy(_levelDetailClone.transform.Find("Stats").Find("Highscore").gameObject);

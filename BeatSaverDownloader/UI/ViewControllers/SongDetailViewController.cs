@@ -158,7 +158,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 delegate (int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
 
             _songNameText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.name == "SongNameText");
-            _coverImage = _levelDetails.transform.Find("Level").Find("CoverImage").GetComponent<RawImage>();
+            _coverImage = _levelDetails.transform.Find("LevelInfo").Find("CoverImage").GetComponent<RawImage>();
 
             _timeText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "Time");
             _bpmText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BPM");
