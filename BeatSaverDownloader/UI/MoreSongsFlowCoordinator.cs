@@ -8,6 +8,7 @@ namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
     {
+        public FlowCoordinator ParentFlowCoordinator { get; set; }
         private NavigationController _moreSongsNavigationcontroller;
         private MoreSongsListViewController _moreSongsView;
         private SongDetailViewController _songDetailView;
@@ -148,8 +149,7 @@ namespace BeatSaverDownloader.UI
             }
             _moreSongsView.Cleanup();
             _downloadQueueView.AbortAllDownloads();
-            var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
-            mainFlow.DismissFlowCoordinator(this);
+            ParentFlowCoordinator.DismissFlowCoordinator(this);
         }
     }
 }
