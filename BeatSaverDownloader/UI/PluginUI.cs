@@ -48,7 +48,7 @@ namespace BeatSaverDownloader.UI
         {
             if (_moreSongsFlowCooridinator == null)
                 _moreSongsFlowCooridinator = BeatSaberUI.CreateFlowCoordinator<MoreSongsFlowCoordinator>();
-            _moreSongsFlowCooridinator.ParentFlowCoordinator = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
+            _moreSongsFlowCooridinator.SetParentFlowCoordinator(BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator, false);
             BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator.PresentFlowCoordinator(_moreSongsFlowCooridinator); // ("PresentFlowCoordinator", _moreSongsFlowCooridinator, null, false, false);
         }
     }
