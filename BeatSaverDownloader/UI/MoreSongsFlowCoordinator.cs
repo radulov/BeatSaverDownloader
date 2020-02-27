@@ -8,6 +8,8 @@ namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
     {
+        public FlowCoordinator ParentFlowCoordinator { get; protected set; }
+        public bool AllowFlowCoordinatorChange { get; protected set; } = true;
         private NavigationController _moreSongsNavigationcontroller;
         private MoreSongsListViewController _moreSongsView;
         private SongDetailViewController _songDetailView;
@@ -60,6 +62,15 @@ namespace BeatSaverDownloader.UI
                 Plugin.log.Error(ex);
             }
         }
+
+        public void SetParentFlowCoordinator(FlowCoordinator parent, bool allowChanges = false)
+        {
+            if (!AllowFlowCoordinatorChange)
+                throw new InvalidOperationException("Changing the parent FlowCoordinator is not allowed on this instance.");
+            ParentFlowCoordinator = parent;
+            AllowFlowCoordinatorChange = allowChanges;
+        }
+
         internal void UpdateTitle()
         {
             title = $"{_moreSongsView._currentFilter}";
@@ -148,8 +159,7 @@ namespace BeatSaverDownloader.UI
             }
             _moreSongsView.Cleanup();
             _downloadQueueView.AbortAllDownloads();
-            var mainFlow = BeatSaberMarkupLanguage.BeatSaberUI.MainFlowCoordinator;
-            mainFlow.DismissFlowCoordinator(this);
+            ParentFlowCoordinator.DismissFlowCoordinator(this);
         }
     }
 }
