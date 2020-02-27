@@ -63,12 +63,11 @@ namespace BeatSaverDownloader.UI
             }
         }
 
-        public void SetParentFlowCoordinator(FlowCoordinator parent, bool allowChanges = false)
+        public void SetParentFlowCoordinator(FlowCoordinator parent)
         {
             if (!AllowFlowCoordinatorChange)
                 throw new InvalidOperationException("Changing the parent FlowCoordinator is not allowed on this instance.");
             ParentFlowCoordinator = parent;
-            AllowFlowCoordinatorChange = allowChanges;
         }
 
         internal void UpdateTitle()

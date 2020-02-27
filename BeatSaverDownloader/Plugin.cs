@@ -55,6 +55,8 @@ namespace BeatSaverDownloader
             PluginUI.instance.Setup();
 
             BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
+            SceneManager.activeSceneChanged += OnActiveSceneChanged;
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnMenuSceneLoadedFresh()
