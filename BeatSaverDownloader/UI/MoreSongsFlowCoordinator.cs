@@ -49,7 +49,7 @@ namespace BeatSaverDownloader.UI
                     UpdateTitle();
                     showBackButton = true;
 
-                    SetViewControllerToNavigationConctroller(_moreSongsNavigationcontroller, _moreSongsView);
+                    SetViewControllersToNavigationController(_moreSongsNavigationcontroller, _moreSongsView);
                     ProvideInitialViewControllers(_moreSongsNavigationcontroller, _downloadQueueView);
                     //  PopViewControllerFromNavigationController(_moreSongsNavigationcontroller);
                 }

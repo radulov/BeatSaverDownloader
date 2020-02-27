@@ -1,5 +1,5 @@
 ﻿using BeatSaberMarkupLanguage.Attributes;
-
+using HMUI;
 namespace BeatSaverDownloader.UI.ViewControllers
 {
     public class SongDescriptionViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController

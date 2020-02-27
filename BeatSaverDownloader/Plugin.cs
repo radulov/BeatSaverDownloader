@@ -11,13 +11,13 @@ using UnityEngine.SceneManagement;
 namespace BeatSaverDownloader
 {
     public enum SongQueueState { Queued, Downloading, Downloaded, Error };
-
-    public class Plugin : IBeatSaberPlugin
+    [Plugin(RuntimeOptions.SingleStartInit)]
+    public class Plugin
     {
         public static Plugin instance;
         public static IPA.Logging.Logger log;
         public static BeatSaverSharp.BeatSaver BeatSaver;
-
+        [Init]
         public void Init(object nullObject, IPA.Logging.Logger logger)
         {
             log = logger;
@@ -27,13 +27,13 @@ namespace BeatSaverDownloader
         {
             PluginConfig.SaveConfig();
         }
-
+        [OnStart]
         public void OnApplicationStart()
         {
-            string steamDllPath = Path.Combine(IPA.Utilities.BeatSaber.InstallPath, "Beat Saber_Data", "Plugins", "steam_api64.dll");
+            string steamDllPath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "Beat Saber_Data", "Plugins", "steam_api64.dll");
             bool hasSteamDll = File.Exists(steamDllPath);
             string platform = hasSteamDll ? "steam" : "oculus";
-            string gameVersionFull = $"{IPA.Utilities.BeatSaber.GameVersion.ToString()}-{platform}";
+            string gameVersionFull = $"{IPA.Utilities.UnityGame.GameVersion.ToString()}-{platform}";
 
             var httpOptions = new BeatSaverSharp.HttpOptions()
             {
