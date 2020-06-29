@@ -11,6 +11,10 @@ using System.Linq;
 using UnityEngine;
 using BeatSaverDownloader.Misc;
 using TMPro;
+using System.Drawing;
+using Color = UnityEngine.Color;
+using BeatSaverSharp;
+
 namespace BeatSaverDownloader.UI.ViewControllers
 {
     public class MoreSongsListViewController : BeatSaberMarkupLanguage.ViewControllers.BSMLResourceViewController
@@ -73,6 +77,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
             get { return _working; }
             set { _working = value; _songsDownButton.interactable = !value; if (!loadingSpinner) return; SetLoading(value); }
         }
+
+        internal bool AllowAIGeneratedMaps = false;
 
         private bool _working;
         private uint lastPage = 0;
@@ -242,11 +248,21 @@ namespace BeatSaverDownloader.UI.ViewControllers
             SetupSourceOptions();
             sortModal._blockerClickedEvent += SortClosed;
             KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
+            KEYBOARD.KEY includeAIKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-27f, 11f), "Include Auto Generated", 45, 10, Color.red);
             keyKey.keyaction += KeyKeyPressed;
+            includeAIKey.keyaction += IncludeAIKeyPressed;
             _searchKeyboard.keyboard.keys.Add(keyKey);
+            _searchKeyboard.keyboard.keys.Add(includeAIKey);
             InitSongList();
 
         }
+
+        internal void IncludeAIKeyPressed(KEYBOARD.KEY key)
+        {
+            AllowAIGeneratedMaps = !AllowAIGeneratedMaps;
+            key.mybutton.GetComponentInChildren<UnityEngine.UI.Image>().color = AllowAIGeneratedMaps ? Color.green : Color.red;
+        }
+
         internal void KeyKeyPressed(KEYBOARD.KEY key)
         {
             _searchKeyboard.keyboard.KeyboardText.text = "Key:";
@@ -381,7 +397,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             foreach (var song in newMaps)
             {
                 BeatSaverSharp.Beatmap fromScoreSaber = ConstructBeatmapFromScoreSaber(song);
-                _songs.Add(new StrongBox<BeatSaverSharp.Beatmap>(fromScoreSaber));
+                _songs.Add(new StrongBox<Beatmap>(fromScoreSaber));
                 if(SongDownloader.Instance.IsSongDownloaded(song.id))
                 customListTableData.data.Add(new ScoreSaberCustomSongCellInfo(song, CellDidSetImage, $"<#7F7F7F>{song.name}", song.levelAuthorName));
                 else
@@ -392,30 +408,31 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         internal async Task GetPagesBeatSaver(uint count)
         {
-            List<BeatSaverSharp.Beatmap> newMaps = new List<BeatSaverSharp.Beatmap>();
+            List<BeatSaverSharp.Beatmap> newMaps = new List<Beatmap>();
             for (uint i = 0; i < count; ++i)
             {
                 _fetchingDetails = $"({i + 1}/{count})";
                 BeatSaverSharp.Page page = null;
+                AutomapperQuery automapperQuery = AllowAIGeneratedMaps ? AutomapperQuery.All : AutomapperQuery.None;
                 switch (_currentBeatSaverFilter)
                 {
                     case BeatSaverFilterOptions.Hot:
-                        page = await Plugin.BeatSaver.Hot(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Hot(lastPage, cancellationTokenSource.Token, fetchProgress, automapperQuery);
                         break;
                     case BeatSaverFilterOptions.Latest:
-                        page = await Plugin.BeatSaver.Latest(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Latest(lastPage, cancellationTokenSource.Token, fetchProgress, automapperQuery);
                         break;
                     case BeatSaverFilterOptions.Rating:
-                        page = await Plugin.BeatSaver.Rating(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Rating(lastPage, cancellationTokenSource.Token, fetchProgress, automapperQuery);
                         break;
                     case BeatSaverFilterOptions.Plays:
-                        page = await Plugin.BeatSaver.Plays(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Plays(lastPage, cancellationTokenSource.Token, fetchProgress, automapperQuery);
                         break;
                     case BeatSaverFilterOptions.Uploader:
                         page = await _currentUploader.Beatmaps(lastPage, cancellationTokenSource.Token, fetchProgress);
                         break;
                     case BeatSaverFilterOptions.Downloads:
-                        page = await Plugin.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress);
+                        page = await Plugin.BeatSaver.Downloads(lastPage, cancellationTokenSource.Token, fetchProgress, automapperQuery);
                         break;
                 }
                 lastPage++;
