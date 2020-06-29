@@ -1,8 +1,8 @@
 ﻿<vertical vertical-fit="PreferredSize" anchor-pos-y="2">
-  <horizontal anchor-min-y="1"  bg='panel-top' pad-left='10' pad-right='10' horizontal-fit='PreferredSize'>
-    <text text='Song Description' align='Center' font-size='8'></text>
+  <horizontal anchor-min-y="1"  bg="panel-top" pad-left="10" pad-right="10" horizontal-fit="PreferredSize">
+    <text text="Song Description" align="Center" font-size="8"></text>
   </horizontal>
-  <horizontal pref-width='100' pref-height='65'>
-  <text-page id='songDescription' text=""></text-page>
+  <horizontal pref-width="100" pref-height="65">
+  <text-page id="songDescription" text=""></text-page>
   </horizontal>
 </vertical>
