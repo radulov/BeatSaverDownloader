@@ -248,7 +248,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             SetupSourceOptions();
             sortModal._blockerClickedEvent += SortClosed;
             KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
-            KEYBOARD.KEY includeAIKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-27f, 11f), "Include Auto Generated", 45, 10, Color.red);
+            KEYBOARD.KEY includeAIKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-27f, 11f), "Include Auto Generated", 45, 10, new Color(0.984f, 0.282f, 0.305f));
             keyKey.keyaction += KeyKeyPressed;
             includeAIKey.keyaction += IncludeAIKeyPressed;
             _searchKeyboard.keyboard.keys.Add(keyKey);
@@ -260,7 +260,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void IncludeAIKeyPressed(KEYBOARD.KEY key)
         {
             AllowAIGeneratedMaps = !AllowAIGeneratedMaps;
-            key.mybutton.GetComponentInChildren<UnityEngine.UI.Image>().color = AllowAIGeneratedMaps ? Color.green : Color.red;
+            key.mybutton.GetComponentInChildren<UnityEngine.UI.Image>().color = AllowAIGeneratedMaps ? new Color(0.341f, 0.839f, 0.341f) : new Color(0.984f, 0.282f, 0.305f);
         }
 
         internal void KeyKeyPressed(KEYBOARD.KEY key)
