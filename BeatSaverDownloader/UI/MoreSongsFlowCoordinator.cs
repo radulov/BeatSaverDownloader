@@ -40,7 +40,7 @@ namespace BeatSaverDownloader.UI
             }
         }
 
-        protected override void DidActivate(bool firstActivation, ActivationType activationType)
+        protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             try
             {
@@ -53,7 +53,7 @@ namespace BeatSaverDownloader.UI
                     ProvideInitialViewControllers(_moreSongsNavigationcontroller, _downloadQueueView);
                     //  PopViewControllerFromNavigationController(_moreSongsNavigationcontroller);
                 }
-                if (activationType == ActivationType.AddedToHierarchy)
+                if (addedToHierarchy)
                 {
                 }
             }
@@ -72,18 +72,18 @@ namespace BeatSaverDownloader.UI
 
         internal void UpdateTitle()
         {
-            title = $"{_moreSongsView._currentFilter}";
+            string title = $"{_moreSongsView._currentFilter}";
             switch(_moreSongsView._currentFilter)
             {
                 case MoreSongsListViewController.FilterMode.BeatSaver:
-                    title += $" - {_moreSongsView._currentBeatSaverFilter}";
+                    SetTitle(title + $" - {_moreSongsView._currentBeatSaverFilter}");
                     break;
                 case MoreSongsListViewController.FilterMode.ScoreSaber:
-                    title += $" - {_moreSongsView._currentScoreSaberFilter}";
+                    SetTitle(title + $" - {_moreSongsView._currentScoreSaberFilter}");
                     break;
             }
         }
-        internal void HandleDidSelectSong(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover = null)
+        internal void HandleDidSelectSong(StrongBox<BeatSaverSharp.Beatmap> song, Sprite cover = null)
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
@@ -93,7 +93,7 @@ namespace BeatSaverDownloader.UI
                 {
                     PushViewControllerToNavigationController(_moreSongsNavigationcontroller, _songDetailView);
                 }
-                SetRightScreenViewController(_songDescriptionView);
+                SetRightScreenViewController(_songDescriptionView, ViewController.AnimationType.In);
                 _songDetailView.Initialize(song, cover);
             }
             else
@@ -106,7 +106,7 @@ namespace BeatSaverDownloader.UI
 
         }
 
-        internal void HandleDidPressDownload(BeatSaverSharp.Beatmap song, Texture2D cover)
+        internal void HandleDidPressDownload(BeatSaverSharp.Beatmap song, Sprite cover)
         {
             Plugin.log.Info("Download pressed for song: " + song.Metadata.SongName);
             //    Misc.SongDownloader.Instance.DownloadSong(song);
@@ -160,5 +160,6 @@ namespace BeatSaverDownloader.UI
             _downloadQueueView.AbortAllDownloads();
             ParentFlowCoordinator.DismissFlowCoordinator(this);
         }
+
     }
 }

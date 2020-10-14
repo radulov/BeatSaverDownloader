@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using System.ComponentModel;
 
 namespace BeatSaverDownloader.UI.ViewControllers
 {
@@ -24,9 +25,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIComponent("download-list")]
         private CustomCellListTableData _downloadList;
 
-        protected override void DidDeactivate(DeactivationType deactivationType)
+        protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
         {
-            base.DidDeactivate(deactivationType);
+            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
         [UIAction("#post-parse")]
@@ -39,7 +40,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             didFinishDownloadingItem += UpdateDownloadingState;
         }
 
-        internal void EnqueueSong(BeatSaverSharp.Beatmap song, Texture2D cover)
+        internal void EnqueueSong(BeatSaverSharp.Beatmap song, Sprite cover)
         {
             DownloadQueueItem queuedSong = new DownloadQueueItem(song, cover);
             queueItems.Add(queuedSong);
@@ -57,7 +58,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 item.AbortDownload();
             }
         }
-        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Texture2D>[] songs, CancellationToken cancellationToken)
+        internal async void EnqueueSongs(Tuple<BeatSaverSharp.Beatmap, Sprite>[] songs, CancellationToken cancellationToken)
         {
 
             for (int i = 0; i < songs.Length; i++)
@@ -65,7 +66,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 if (cancellationToken.IsCancellationRequested)
                     return;
                 bool downloaded = false;
-                Tuple<BeatSaverSharp.Beatmap, Texture2D> pair = songs[i];
+                Tuple<BeatSaverSharp.Beatmap, Sprite> pair = songs[i];
                 BeatSaverSharp.Beatmap map = pair.Item1;
                 if (map.Partial)
                 {
@@ -113,7 +114,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
     }
 
-    internal class DownloadQueueItem : INotifiableHost
+    internal class DownloadQueueItem : INotifyPropertyChanged
     {
         public SongQueueState queueState = SongQueueState.Queued;
         internal Progress<double> downloadProgress;
@@ -141,17 +142,17 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         private string _songName;
         private string _authorName;
-        private Texture2D _coverTexture;
+        private Sprite _cover;
 
         public DownloadQueueItem()
         {
         }
 
-        public DownloadQueueItem(BeatSaverSharp.Beatmap song, Texture2D cover)
+        public DownloadQueueItem(BeatSaverSharp.Beatmap song, Sprite cover)
         {
             beatmap = song;
             _songName = song.Metadata.SongName;
-            _coverTexture = cover;
+            _cover = cover;
             _authorName = $"{song.Metadata.SongAuthorName} <size=80%>[{song.Metadata.LevelAuthorName}]";
         }
 
@@ -163,7 +164,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             var filter = _coverImage.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();
             filter.aspectRatio = 1f;
             filter.aspectMode = UnityEngine.UI.AspectRatioFitter.AspectMode.HeightControlsWidth;
-            _coverImage.texture = _coverTexture;
+            _coverImage.texture = _cover.texture;
             _coverImage.texture.wrapMode = TextureWrapMode.Clamp;
             _coverImage.rectTransform.sizeDelta = new Vector2(8, 0);
             _songNameText.text = _songName;

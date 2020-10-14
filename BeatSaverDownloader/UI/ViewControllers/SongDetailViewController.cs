@@ -39,7 +39,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         private bool _downloadInteractable = false;
 
-        public Action<BeatSaverSharp.Beatmap, Texture2D> didPressDownload;
+        public Action<BeatSaverSharp.Beatmap, Sprite> didPressDownload;
         public Action<BeatSaverSharp.User> didPressUploader;
         public Action<string> setDescription;
 
@@ -89,7 +89,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("downloadPressed")]
         internal void DownloadPressed()
         {
-            didPressDownload?.Invoke(_currentSong, _coverImage.texture as Texture2D);
+            didPressDownload?.Invoke(_currentSong, Misc.Sprites.LoadSpriteFromTexture(_coverImage.texture as Texture2D));
             DownloadInteractable = false;
         }
         [UIAction("uploaderPressed")]
@@ -119,7 +119,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             }
         }
 
-        internal async void Initialize(StrongBox<BeatSaverSharp.Beatmap> song, Texture2D cover)
+        internal async void Initialize(StrongBox<BeatSaverSharp.Beatmap> song, Sprite cover)
         {
             if (song.Value.Partial)
             {
@@ -140,7 +140,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
-                _coverImage.texture = cover;
+                _coverImage.texture = cover.texture;
             UpdateDownloadButtonStatus();
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
@@ -154,9 +154,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
             DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash);
         }
 
-        protected override void DidDeactivate(DeactivationType deactivationType)
+        protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
         {
-            base.DidDeactivate(deactivationType);
+            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
         internal void SetupDetailView()
@@ -297,7 +297,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             var segmentedControl = new GameObject("CustomTextSegmentedControl", typeof(RectTransform)).AddComponent<TextSegmentedControl>();
             segmentedControl.gameObject.AddComponent<HorizontalLayoutGroup>();
 
-            TextSegmentedControlCellNew[] _segments = Resources.FindObjectsOfTypeAll<TextSegmentedControlCellNew>();
+            TextSegmentedControlCell[] _segments = Resources.FindObjectsOfTypeAll<TextSegmentedControlCell>();
 
             segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "HSingleTextSegmentedControlCell"));
             segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftTextSegmentedControlCell"));

@@ -54,19 +54,18 @@ namespace BeatSaverDownloader
 
             PluginUI.instance.Setup();
 
-            BS_Utils.Utilities.BSEvents.menuSceneLoadedFresh += OnMenuSceneLoadedFresh;
+            BS_Utils.Utilities.BSEvents.earlyMenuSceneLoadedFresh += OnMenuSceneLoadedFresh;
             SceneManager.activeSceneChanged += OnActiveSceneChanged;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
-        private void OnMenuSceneLoadedFresh()
+        private void OnMenuSceneLoadedFresh(ScenesTransitionSetupDataSO data)
         {
             try
             {
                 PluginUI.SetupLevelDetailClone();
                 Settings.SetupSettings();
                 SongCore.Loader.SongsLoadedEvent += Loader_SongsLoadedEvent;
-                GetUserInfo.GetUserName();
             }
             catch (Exception e)
             {

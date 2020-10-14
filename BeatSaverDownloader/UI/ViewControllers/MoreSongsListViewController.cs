@@ -65,11 +65,11 @@ namespace BeatSaverDownloader.UI.ViewControllers
             }
         }
         private List<StrongBox<BeatSaverSharp.Beatmap>> _songs = new List<StrongBox<BeatSaverSharp.Beatmap>>();
-        public List<Tuple<BeatSaverSharp.Beatmap, Texture2D>> _multiSelectSongs = new List<Tuple<BeatSaverSharp.Beatmap, Texture2D>>();
+        public List<Tuple<BeatSaverSharp.Beatmap, Sprite>> _multiSelectSongs = new List<Tuple<BeatSaverSharp.Beatmap, Sprite>>();
         public LoadingControl loadingSpinner;
         internal Progress<Double> fetchProgress;
 
-        public Action<StrongBox<BeatSaverSharp.Beatmap>, Texture2D> didSelectSong;
+        public Action<StrongBox<BeatSaverSharp.Beatmap>, Sprite> didSelectSong;
         public Action filterDidChange;
         public Action multiSelectDidChange;
         public bool Working
@@ -120,7 +120,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         {
             if (MultiSelectEnabled)
                 if (!_multiSelectSongs.Any(x => x.Item1 == _songs[row].Value))
-                    _multiSelectSongs.Add(_songs[row].Value, customListTableData.data[row].icon);
+                    _multiSelectSongs.Add(new Tuple<Beatmap, Sprite>(_songs[row].Value, customListTableData.data[row].icon));
             didSelectSong?.Invoke(_songs[row], customListTableData.data[row].icon);
         }
 
@@ -222,14 +222,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _songs.Clear();
             _multiSelectSongs.Clear();
         }
-        protected override void DidDeactivate(DeactivationType deactivationType)
+        protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
         {
-            base.DidDeactivate(deactivationType);
+            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
-        protected override void DidActivate(bool firstActivation, ActivationType type)
+        protected override void DidActivate(bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
-            base.DidActivate(firstActivation, type);
+            base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
             if (!firstActivation)
             {
                 InitSongList();
@@ -246,7 +246,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             Destroy(loadingSpinner.GetComponent<Touchable>());
             fetchProgress = new Progress<double>(ProgressUpdate);
             SetupSourceOptions();
-            sortModal._blockerClickedEvent += SortClosed;
+            sortModal.blockerClickedEvent += SortClosed;
             KEYBOARD.KEY keyKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-35, 11f), "Key:", 15, 10, new Color(0.92f, 0.64f, 0));
             KEYBOARD.KEY includeAIKey = new KEYBOARD.KEY(_searchKeyboard.keyboard, new Vector2(-27f, 11f), "Include Auto Generated", 45, 10, new Color(0.984f, 0.282f, 0.305f));
             keyKey.keyaction += KeyKeyPressed;
@@ -292,8 +292,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public void SetupSourceOptions()
         {
             sourceListTableData.data.Clear();
-            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.BeatSaver, "BeatSaver", null, Sprites.BeatSaverIcon.texture));
-            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.ScoreSaber, "ScoreSaber", null, Sprites.ScoreSaberIcon.texture));
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.BeatSaver, "BeatSaver", null, Sprites.BeatSaverIcon));
+            sourceListTableData.data.Add(new SourceCellInfo(FilterMode.ScoreSaber, "ScoreSaber", null, Sprites.ScoreSaberIcon));
             sourceListTableData.tableView.ReloadData();
         }
         public void SetupSortOptions()
@@ -302,20 +302,20 @@ namespace BeatSaverDownloader.UI.ViewControllers
             switch (_currentFilter)
             {
                 case FilterMode.BeatSaver:
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Latest), "Latest", "BeatSaver", Sprites.BeatSaverIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Rating), "Rating", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Hot), "Hot", "BeatSaver", Sprites.BeatSaverIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Latest), "Latest", "BeatSaver", Sprites.BeatSaverIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Rating), "Rating", "BeatSaver", Sprites.BeatSaverIcon));
 
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Downloads), "Downloads", "BeatSaver", Sprites.BeatSaverIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Plays), "Plays", "BeatSaver", Sprites.BeatSaverIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Downloads), "Downloads", "BeatSaver", Sprites.BeatSaverIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.BeatSaver, BeatSaverFilterOptions.Plays), "Plays", "BeatSaver", Sprites.BeatSaverIcon));
                     break;
                 case FilterMode.ScoreSaber:
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Trending), "Trending", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Ranked), "Ranked", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Qualified), "Qualified", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Loved), "Loved", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Difficulty), "Difficulty", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
-                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Plays), "Plays", "ScoreSaber", Sprites.ScoreSaberIcon.texture));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Trending), "Trending", "ScoreSaber", Sprites.ScoreSaberIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Ranked), "Ranked", "ScoreSaber", Sprites.ScoreSaberIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Qualified), "Qualified", "ScoreSaber", Sprites.ScoreSaberIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Loved), "Loved", "ScoreSaber", Sprites.ScoreSaberIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Difficulty), "Difficulty", "ScoreSaber", Sprites.ScoreSaberIcon));
+                    sortListTableData.data.Add(new SortFilterCellInfo(new SortFilter(FilterMode.ScoreSaber, default, ScoreSaberFilterOptions.Plays), "Plays", "ScoreSaber", Sprites.ScoreSaberIcon));
                     break;
             }
             sortListTableData.tableView.ReloadData();
@@ -537,7 +537,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
     public class SortFilterCellInfo : CustomListTableData.CustomCellInfo
     {
         public SortFilter sortFilter;
-        public SortFilterCellInfo(SortFilter filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
+        public SortFilterCellInfo(SortFilter filter, string text, string subtext = null, Sprite icon = null) : base(text, subtext, icon)
         {
             sortFilter = filter;
         }
@@ -545,7 +545,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
     public class SourceCellInfo : CustomListTableData.CustomCellInfo
     {
         public MoreSongsListViewController.FilterMode filter;
-        public SourceCellInfo(MoreSongsListViewController.FilterMode filter, string text, string subtext = null, Texture2D icon = null) : base(text, subtext, icon)
+        public SourceCellInfo(MoreSongsListViewController.FilterMode filter, string text, string subtext = null, Sprite icon = null) : base(text, subtext, icon)
         {
             this.filter = filter;
         }
@@ -563,7 +563,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         protected async void LoadImage()
         {
             byte[] image = await _song.FetchCoverImage();
-            Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+            Sprite icon = Misc.Sprites.LoadSpriteRaw(image);
             base.icon = icon;
             _callback(this);
         }
@@ -582,7 +582,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         protected async void LoadImage()
         {
             byte[] image = await _song.FetchCoverImage();
-            Texture2D icon = Misc.Sprites.LoadTextureRaw(image);
+            Sprite icon = Misc.Sprites.LoadSpriteRaw(image);
             base.icon = icon;
             _callback(this);
         }

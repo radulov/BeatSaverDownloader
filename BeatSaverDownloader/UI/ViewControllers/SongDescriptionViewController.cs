@@ -9,9 +9,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIComponent("songDescription")]
         internal TextPageScrollView songDescription;
 
-        protected override void DidDeactivate(DeactivationType deactivationType)
+        protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
         {
-            base.DidDeactivate(deactivationType);
+            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
         internal void ClearData()
