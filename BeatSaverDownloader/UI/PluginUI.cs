@@ -32,8 +32,8 @@ namespace BeatSaverDownloader.UI
                 Destroy(hoverhint);
             foreach (var hoverhint in localHoverHints)
                 Destroy(hoverhint);
-       //     Destroy(_levelDetailClone.transform.Find("FavoritesToggle").gameObject);
-       //     Destroy(_levelDetailClone.transform.Find("ActionButtons").gameObject);
+            Destroy(_levelDetailClone.transform.Find("FavoriteToggle").gameObject);
+            Destroy(_levelDetailClone.transform.Find("ActionButtons").gameObject);
          //   Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxCombo").gameObject);
          //   Destroy(_levelDetailClone.transform.Find("Stats").Find("Highscore").gameObject);
          //   Destroy(_levelDetailClone.transform.Find("Stats").Find("MaxRank").gameObject);
