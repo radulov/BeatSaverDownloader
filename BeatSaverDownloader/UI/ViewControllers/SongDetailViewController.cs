@@ -27,15 +27,15 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private BeatSaverSharp.BeatmapCharacteristic _selectedCharacteristic;
         private BeatSaverSharp.BeatmapCharacteristicDifficulty[] _currentDifficulties;
 
-        private TextMeshProUGUI _songNameText;
-        private RawImage _coverImage;
+        private CurvedTextMeshPro _songNameText;
+        private ImageView _coverImage;
 
         private TextMeshProUGUI _timeText;
         private TextMeshProUGUI _bpmText;
-        private TextMeshProUGUI _npsText;
-        private TextMeshProUGUI _notesText;
-        private TextMeshProUGUI _obstaclesText;
-        private TextMeshProUGUI _bombsText;
+        private CurvedTextMeshPro _npsText;
+        private CurvedTextMeshPro _notesText;
+        private CurvedTextMeshPro _obstaclesText;
+        private CurvedTextMeshPro _bombsText;
 
         private bool _downloadInteractable = false;
 
@@ -89,7 +89,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         [UIAction("downloadPressed")]
         internal void DownloadPressed()
         {
-            didPressDownload?.Invoke(_currentSong, Misc.Sprites.LoadSpriteFromTexture(_coverImage.texture as Texture2D));
+            didPressDownload?.Invoke(_currentSong, _coverImage.sprite);
             DownloadInteractable = false;
         }
         [UIAction("uploaderPressed")]
@@ -103,14 +103,14 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if (_detailViewSetup)
             {
                 //Clear all the data
-                _timeText.text = "--";
-                _bpmText.text = "--";
+          //      _timeText.text = "--";
+          //      _bpmText.text = "--";
                 _npsText.text = "--";
                 _notesText.text = "--";
                 _obstaclesText.text = "--";
                 _bombsText.text = "--";
                 _songNameText.text = "--";
-                _coverImage.texture = Texture2D.blackTexture;
+                _coverImage.sprite = Misc.Sprites.LoadSpriteFromTexture(Texture2D.blackTexture);
                 _diffSegmentedControl.SetTexts(new string[] { });
                 _characteristicSegmentedControl.SetData(new IconSegmentedControl.DataItem[] { });
                 DownloadInteractable = false;
@@ -140,7 +140,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             _songNameText.text = _currentSong.Metadata.SongName;
             if (cover != null)
-                _coverImage.texture = cover.texture;
+                _coverImage.sprite = cover;
             UpdateDownloadButtonStatus();
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
@@ -172,18 +172,18 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _diffSegmentedControl = CreateTextSegmentedControl(_difficultiesSegmentedControllerClone.transform as RectTransform, new Vector2(0, 0), new Vector2(0, 0),
                 delegate (int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
 
-            _songNameText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.name == "SongNameText");
-            _coverImage = _levelDetails.transform.Find("LevelInfo").Find("CoverImage").GetComponent<RawImage>();
+            _songNameText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.name == "SongNameText");
+            _coverImage = _levelDetails.transform.Find("LevelBarBig").Find("SongArtwork").GetComponent<ImageView>();
 
-            _timeText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "Time");
-            _bpmText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BPM");
-            _npsText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "NPS");
-            _notesText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "NotesCount");
-            _obstaclesText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
-            _bombsText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BombsCount");
+         //   _timeText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "Time");
+         //   _bpmText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BPM");
+            _npsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NPS");
+            _notesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NotesCount");
+            _obstaclesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
+            _bombsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "BombsCount");
 
-            _timeText.text = "--";
-            _bpmText.text = "--";
+       //     _timeText.text = "--";
+      //      _bpmText.text = "--";
             _npsText.text = "--";
             _notesText.text = "--";
             _obstaclesText.text = "--";
@@ -195,8 +195,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         public void SelectedDifficulty(BeatSaverSharp.BeatmapCharacteristicDifficulty difficulty)
         {
-            _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
-            _bpmText.text = _currentSong.Metadata.BPM.ToString();
+     //       _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
+     //       _bpmText.text = _currentSong.Metadata.BPM.ToString();
             _npsText.text = ((float)difficulty.Notes / (float)difficulty.Length).ToString("F2");
             _notesText.text = difficulty.Notes.ToString();
             _obstaclesText.text = difficulty.Obstacles.ToString();
@@ -299,10 +299,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             TextSegmentedControlCell[] _segments = Resources.FindObjectsOfTypeAll<TextSegmentedControlCell>();
 
-            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "HSingleTextSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftTextSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.Last(x => x.name == "HMiddleTextSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.Last(x => x.name == "RightTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "SingleHorizontalTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftHorizontalTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.Last(x => x.name == "MiddleHorizontalTextSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.Last(x => x.name == "RightHorizontalTextSegmentedControlCell"));
 
             segmentedControl.SetPrivateField("_container", Resources.FindObjectsOfTypeAll<TextSegmentedControl>().Select(x => x.GetPrivateField<object>("_container")).First(x => x != null));
 
@@ -327,10 +327,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
             IconSegmentedControlCell[] _segments = Resources.FindObjectsOfTypeAll<IconSegmentedControlCell>();
 
-            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "SingleIconSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftIconSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.First(x => x.name == "HMiddleIconSegmentedControlCell"));
-            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.First(x => x.name == "RightIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_singleCellPrefab", _segments.First(x => x.name == "SingleHorizontalIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_firstCellPrefab", _segments.First(x => x.name == "LeftHorizontalIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_middleCellPrefab", _segments.First(x => x.name == "MiddleHorizontalIconSegmentedControlCell"));
+            segmentedControl.SetPrivateField("_lastCellPrefab", _segments.First(x => x.name == "RightHorizontalIconSegmentedControlCell"));
 
             segmentedControl.SetPrivateField("_container", Resources.FindObjectsOfTypeAll<IconSegmentedControl>().Select(x => x.GetPrivateField<object>("_container")).First(x => x != null));
 
