@@ -3,7 +3,7 @@
     <button id="downloadButton" interactable="~downloadInteractable"  on-click="downloadPressed" text="Download" pad="4" pref-height="8"></button>
     <button id="uploaderButton" interactable="~uploaderInteractable" on-click="uploaderPressed" text="More By Mapper" pad="4" pref-height="8"></button>
   </horizontal>
-  <text active="~show-auto-generated-text" text="This map was auto generated!" color="#FB484E" align="Center" ignore-layout="true" anchor-pos-y="7" />
+  <text active="~show-auto-generated-text" text="This map was auto generated!" color="#FB484E" align="Center" ignore-layout="true" anchor-pos-y="13.5" />
 </div>
 <!--<horizontal anchor-min-y="1" anchor-pos-y="-6" bg="panel-top" pad-left="10" pad-right="10" horizontal-fit="PreferredSize">
   <text text="Song Detail" align="Center" font-size="10"></text>
