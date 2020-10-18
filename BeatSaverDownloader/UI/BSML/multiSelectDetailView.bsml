@@ -1,7 +1,7 @@
 ﻿<bg>
-  <text-page id="textPage" size-delta-x="10" size-delta-y="-35" anchor-pos-x="2.5" anchor-pos-y="-2.5" text="~multiDescription"></text-page>
+  <text-page id="textPage" size-delta-x="10" size-delta-y="-35" anchor-pos-x="2.5" anchor-pos-y="8.0" text="~multiDescription"></text-page>
   <horizontal  horizontal-fit="PreferredSize" vertical-fit="PreferredSize" anchor-pos-y="-17.5" spacing="2">
-    <button id="downloadButton" on-click="downloadPressed" text="~multiDownloadText" pad="4" pref-height="8"></button>
-    <button id="clearButton" on-click="clearPressed" text="Clear" pad="4" pref-height="8"></button>
+    <button id="downloadButton" on-click="downloadPressed" text="~multiDownloadText" pad="0" pref-height="8"></button>
+    <button id="clearButton" on-click="clearPressed" text="Clear" pad="0" pref-height="8"></button>
   </horizontal>
 </bg>

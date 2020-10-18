@@ -1,10 +1,10 @@
 ﻿<bg>
   <vertical>
     <horizontal horizontal-fit="PreferredSize" vertical-fit="PreferredSize" spacing="2" anchor-min-x="0" anchor-max-x="0.5">
-      <button  id="multiSelectButton" pad="4" pref-height="5" pref-width="15" text="M-S" on-click="multiSelectToggle"></button>
-      <button  id="searchButton" pad="4" pref-height="5" pref-width="20" text="Search" click-event="open-searchKeyboard" ></button>
+      <button  id="multiSelectButton" pad="0" pref-height="8" pref-width="15" text="M-S" on-click="multiSelectToggle"></button>
+      <button  id="searchButton" pad="0" pref-height="8" pref-width="20" text="Search" click-event="open-searchKeyboard" ></button>
       <modal-keyboard id="searchKeyboard" value="searchValue" show-event="open-searchKeyboard" hide-event="close-searchKeyboard,closeAllModals" clear-on-open="false" on-enter="searchPressed" clickerino-offerino-closerino="false"></modal-keyboard>
-      <button id="sortButton" pad="4" pref-height="5" pref-width="20" click-event="open-sourceModal" on-click="sortPressed" text="Sort"></button>
+      <button id="sortButton" pad="0" pref-height="8" pref-width="20" click-event="open-sourceModal" on-click="sortPressed" text="Sort"></button>
       <modal id="sourceModal" show-event="open-sourceModal" hide-event="close-sourceModal,closeAllModals" move-to-center="true" size-delta-y="25" size-delta-x="50" clickerino-offerino-closerino="true">
         <vertical anchor-pos-y="-4">
         <!--  <page-button event-click="sourceList#PageUp" pref-width="14" direction="Up"></page-button> -->
@@ -21,9 +21,9 @@
       </modal>
     </horizontal>
     <page-button event-click="list#PageUp" on-click="pageUpPressed" direction="Up"></page-button>
-    <list id="list" expand-cell="true" select-cell="listSelect">
+    <list id="list" expand-cell="true" select-cell="listSelect" visible-cells="7">
       <modal id="loadingModal" show-event="open-loadingModal" hide-event="close-loadingModal,closeAllModals" move-to-center="true" size-delta-y="30" size-delta-x="48">
-        <button id="abortButton" on-click="abortClicked" text="Abort" anchor-pos-y="-24" pref-height="5" pad="4" ></button>
+        <button id="abortButton" on-click="abortClicked" text="Abort" anchor-pos-y="-24" pref-height="8" pad="0" ></button>
       </modal>
     </list>
     <page-button id="songsPageDown" event-click="list#PageDown" on-click="pageDownPressed" direction="Down"></page-button>

@@ -32,6 +32,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         private TextMeshProUGUI _timeText;
         private TextMeshProUGUI _bpmText;
+        private CurvedTextMeshPro _songSubText;
         private CurvedTextMeshPro _npsText;
         private CurvedTextMeshPro _notesText;
         private CurvedTextMeshPro _obstaclesText;
@@ -173,17 +174,23 @@ namespace BeatSaverDownloader.UI.ViewControllers
                 delegate (int value) { SelectedDifficulty(_currentDifficulties[value]); }, 3.5f, 1);
 
             _songNameText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.name == "SongNameText");
+            _songSubText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.name == "AuthorNameText");
+            _songSubText.overflowMode = TextOverflowModes.Overflow;
+            _songSubText.enableWordWrapping = false;
+
             _coverImage = _levelDetails.transform.Find("LevelBarBig").Find("SongArtwork").GetComponent<ImageView>();
 
          //   _timeText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "Time");
          //   _bpmText = _levelDetails.GetComponentsInChildren<TextMeshProUGUI>().First(x => x.gameObject.transform.parent.name == "BPM");
+            
             _npsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NPS");
             _notesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NotesCount");
             _obstaclesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
             _bombsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "BombsCount");
 
-       //     _timeText.text = "--";
-      //      _bpmText.text = "--";
+            //     _timeText.text = "--";
+            //      _bpmText.text = "--";
+            _songSubText.text = "--";
             _npsText.text = "--";
             _notesText.text = "--";
             _obstaclesText.text = "--";
@@ -195,8 +202,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         public void SelectedDifficulty(BeatSaverSharp.BeatmapCharacteristicDifficulty difficulty)
         {
-     //       _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
-     //       _bpmText.text = _currentSong.Metadata.BPM.ToString();
+            //       _timeText.text = $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
+            //       _bpmText.text = _currentSong.Metadata.BPM.ToString();
+            _songSubText.text = $"{_currentSong.Metadata.BPM.ToString()} BPM   " + $"{Math.Floor((double)difficulty.Length / 60):N0}:{Math.Floor((double)difficulty.Length % 60):00}";
             _npsText.text = ((float)difficulty.Notes / (float)difficulty.Length).ToString("F2");
             _notesText.text = difficulty.Notes.ToString();
             _obstaclesText.text = difficulty.Obstacles.ToString();
