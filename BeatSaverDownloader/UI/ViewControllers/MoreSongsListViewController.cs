@@ -75,7 +75,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         public bool Working
         {
             get { return _working; }
-            set { _working = value; _songsDownButton.interactable = !value; if (!loadingSpinner) return; SetLoading(value); }
+            set { _working = value; _songsDownButton.interactable = !value; SetLoading(value); }
         }
 
         internal bool AllowAIGeneratedMaps = false;
@@ -242,8 +242,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
             (transform as RectTransform).sizeDelta = new Vector2(70, 0);
             (transform as RectTransform).anchorMin = new Vector2(0.5f, 0);
             (transform as RectTransform).anchorMax = new Vector2(0.5f, 1);
-            loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
-            Destroy(loadingSpinner.GetComponent<Touchable>());
             fetchProgress = new Progress<double>(ProgressUpdate);
             SetupSourceOptions();
             sortModal.blockerClickedEvent += SortClosed;
@@ -254,7 +252,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _searchKeyboard.keyboard.keys.Add(keyKey);
             _searchKeyboard.keyboard.keys.Add(includeAIKey);
             InitSongList();
-
         }
 
         internal void IncludeAIKeyPressed(KEYBOARD.KEY key)
@@ -279,6 +276,9 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         public void SetLoading(bool value, double progress = 0, string details = "")
         {
+            if(loadingSpinner == null)
+            loadingSpinner = GameObject.Instantiate(Resources.FindObjectsOfTypeAll<LoadingControl>().First(), loadingModal.transform);
+            Destroy(loadingSpinner.GetComponent<Touchable>());
             if (value)
             {
                 parserParams.EmitEvent("open-loadingModal");

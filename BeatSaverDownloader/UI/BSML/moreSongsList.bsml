@@ -20,11 +20,11 @@
         </vertical>
       </modal>
     </horizontal>
+    <modal id="loadingModal" show-event="open-loadingModal" hide-event="close-loadingModal,closeAllModals" move-to-center="false" size-delta-y="35" size-delta-x="48">
+      <button id="abortButton" on-click="abortClicked" text="Abort" anchor-min-x="0.5" anchor-max-x="0.5" anchor-pos-y="5" pref-height="8" pad="0" ></button>
+    </modal>
     <page-button event-click="list#PageUp" on-click="pageUpPressed" direction="Up"></page-button>
     <list id="list" expand-cell="true" select-cell="listSelect">
-      <modal id="loadingModal" show-event="open-loadingModal" hide-event="close-loadingModal,closeAllModals" move-to-center="true" size-delta-y="30" size-delta-x="48">
-        <button id="abortButton" on-click="abortClicked" text="Abort" anchor-pos-y="-24" pref-height="8" pad="0" ></button>
-      </modal>
     </list>
     <page-button id="songsPageDown" event-click="list#PageDown" on-click="pageDownPressed" direction="Down"></page-button>
   </vertical>
