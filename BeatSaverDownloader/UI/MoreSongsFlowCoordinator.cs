@@ -93,7 +93,7 @@ namespace BeatSaverDownloader.UI
                 {
                     PushViewControllerToNavigationController(_moreSongsNavigationcontroller, _songDetailView);
                 }
-                SetRightScreenViewController(_songDescriptionView, ViewController.AnimationType.In);
+                SetRightScreenViewController(_songDescriptionView, ViewController.AnimationType.None);
                 _songDetailView.Initialize(song, cover);
             }
             else
