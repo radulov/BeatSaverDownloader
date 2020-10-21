@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -45,7 +46,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-        private void SongLoader_SongsLoadedEvent(SongCore.Loader sender, Dictionary<string, CustomPreviewBeatmapLevel> levels)
+        private void SongLoader_SongsLoadedEvent(SongCore.Loader sender, ConcurrentDictionary<string, CustomPreviewBeatmapLevel> levels)
         {
             Plugin.log.Debug("Establishing Already Downloaded Songs");
             _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => SongCore.Collections.hashForLevelID(x.levelID)));

@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine.SceneManagement;
+using System.Collections;
+using System.Threading;
+using System.Collections.Concurrent;
 
 namespace BeatSaverDownloader
 {
@@ -73,7 +76,7 @@ namespace BeatSaverDownloader
             }
         }
 
-        private void Loader_SongsLoadedEvent(SongCore.Loader arg1, Dictionary<string, CustomPreviewBeatmapLevel> arg2)
+        private void Loader_SongsLoadedEvent(SongCore.Loader arg1, ConcurrentDictionary<string, CustomPreviewBeatmapLevel> arg2)
         {
             if (!PluginUI.instance.moreSongsButton.Interactable)
                 PluginUI.instance.moreSongsButton.Interactable = true;
