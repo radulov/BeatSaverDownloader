@@ -14,6 +14,8 @@ using TMPro;
 using System.Drawing;
 using Color = UnityEngine.Color;
 using BeatSaverSharp;
+using UnityEngine.UI;
+using BeatSaberMarkupLanguage.Tags;
 
 namespace BeatSaverDownloader.UI.ViewControllers
 {
@@ -126,7 +128,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
 
         internal void SortClosed()
         {
-            Plugin.log.Info("Sort modal closed");
+       //     Plugin.log.Info("Sort modal closed");
             _currentFilter = _previousFilter;
         }
 
@@ -159,9 +161,21 @@ namespace BeatSaverDownloader.UI.ViewControllers
             SetupSortOptions();
             parserParams.EmitEvent("open-sortModal");
         }
+        [UIAction("searchOpened")]
+        internal void SearchOpened()
+        {
+            interactableGroup.gameObject.SetActive(false);
+            customListTableData.tableView.ClearSelection();
+            filterDidChange?.Invoke();
+
+        }
+
+        [UIComponent("interactableGroup")]
+        VerticalLayoutGroup interactableGroup;
         [UIAction("searchPressed")]
         internal async void SearchPressed(string text)
         {
+            interactableGroup.gameObject.SetActive(true);
             if (string.IsNullOrWhiteSpace(text)) return;
             //   Plugin.log.Info("Search Pressed: " + text);
             _currentSearch = text;
