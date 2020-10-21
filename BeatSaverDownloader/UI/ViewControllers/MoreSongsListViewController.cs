@@ -238,6 +238,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
         protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
         {
+            interactableGroup.gameObject.SetActive(true);
             base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
         }
 
