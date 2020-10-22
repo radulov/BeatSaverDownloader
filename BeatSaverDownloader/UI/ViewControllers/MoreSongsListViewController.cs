@@ -230,6 +230,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void ClearData()
         {
             lastPage = 0;
+            customListTableData.tableView.ClearSelection();
             customListTableData.data.Clear();
             customListTableData.tableView.ReloadData();
             customListTableData.tableView.ScrollToCellWithIdx(0, TableViewScroller.ScrollPositionType.Beginning, false);
