@@ -38,9 +38,10 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private CurvedTextMeshPro _obstaclesText;
         private CurvedTextMeshPro _bombsText;
 
-        private bool _downloadInteractable = false;
+        
 
         public Action<BeatSaverSharp.Beatmap, Sprite> didPressDownload;
+        public Action<BeatSaverSharp.Beatmap> didPressPreview;
         public Action<BeatSaverSharp.User> didPressUploader;
         public Action<string> setDescription;
 
@@ -56,6 +57,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             }
         }
 
+        private bool _downloadInteractable = false;
         [UIValue("downloadInteractable")]
         public bool DownloadInteractable
         {
@@ -74,6 +76,17 @@ namespace BeatSaverDownloader.UI.ViewControllers
             set
             {
                 _uploaderInteractable = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _previewInteractable = true;
+        [UIValue("previewInteractable")]
+        public bool PreviewInteractable
+        {
+            get => _previewInteractable;
+            set
+            {
+                _previewInteractable = value;
                 NotifyPropertyChanged();
             }
         }
@@ -97,6 +110,18 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void UploaderPressed()
         {
             didPressUploader?.Invoke(_currentSong.Uploader);
+        }
+
+        [UIComponent("previewButton")]
+        private Button _previewButton;
+
+        [UIAction("previewPressed")]
+        internal void PreviewPressed()
+        {
+            didPressPreview?.Invoke(_currentSong);
+            //_previewButton = gameObject.GetComponentsInChildren<GameObject>().First(x => x.gameObject.transform.parent.name == "previewButton");
+            //_previewButton.text = "Stop preview";
+            _previewButton.GetComponentInChildren<Text>().text = "Stop preview";
         }
 
         internal void ClearData()
@@ -187,6 +212,8 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _notesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NotesCount");
             _obstaclesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
             _bombsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "BombsCount");
+
+           
 
             //     _timeText.text = "--";
             //      _bpmText.text = "--";

@@ -1,6 +1,7 @@
 ﻿<div>
   <horizontal anchor-pos-y="-12" horizontal-fit="PreferredSize" vertical-fit="PreferredSize" spacing="2">
     <button id="downloadButton" interactable="~downloadInteractable"  on-click="downloadPressed" text="Download" pad="0" pref-height="8"></button>
+    <button id="previewButton" interactable="~previewInteractable"  on-click="previewPressed" text="Preview" pad="0" pref-height="8"></button>
     <button id="uploaderButton" interactable="~uploaderInteractable" on-click="uploaderPressed" text="More By Mapper" pad="0" pref-height="8"></button>
   </horizontal>
   <text active="~show-auto-generated-text" text="This map was auto generated!" color="#FB484E" align="Center" ignore-layout="true" anchor-pos-y="13.5" />

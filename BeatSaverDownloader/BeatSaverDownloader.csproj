@@ -145,6 +145,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Misc\SongPlayer.cs" />
+    <Compile Include="Misc\Preferences.cs" />
     <Compile Include="Misc\SongDownloader.cs" />
     <Compile Include="Misc\Sprites.cs" />
     <Compile Include="Misc\FileOperationAPIWrapper.cs" />

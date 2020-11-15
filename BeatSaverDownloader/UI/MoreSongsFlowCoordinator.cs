@@ -4,6 +4,11 @@ using HMUI;
 using System;
 using UnityEngine;
 using System.Runtime.CompilerServices;
+using System.Collections;
+using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine.Networking;
+
 namespace BeatSaverDownloader.UI
 {
     public class MoreSongsFlowCoordinator : FlowCoordinator
@@ -16,6 +21,7 @@ namespace BeatSaverDownloader.UI
         private MultiSelectDetailViewController _multiSelectDetailView;
         private SongDescriptionViewController _songDescriptionView;
         private DownloadQueueViewController _downloadQueueView;
+        private Misc.SongPlayer _songPlayer;
 
         public void Awake()
         {
@@ -34,9 +40,12 @@ namespace BeatSaverDownloader.UI
                 _moreSongsView.multiSelectDidChange += HandleMultiSelectDidChange;
                 _songDetailView.didPressDownload += HandleDidPressDownload;
                 _songDetailView.didPressUploader += HandleDidPressUploader;
+                _songDetailView.didPressPreview += HandleDidPressPreview;
                 _songDetailView.setDescription += _songDescriptionView.Initialize;
                 _multiSelectDetailView.multiSelectClearPressed += _moreSongsView.MultiSelectClear;
                 _multiSelectDetailView.multiSelectDownloadPressed += HandleMultiSelectDownload;
+
+                _songPlayer = new Misc.SongPlayer();
             }
         }
 
@@ -113,6 +122,63 @@ namespace BeatSaverDownloader.UI
             _songDetailView.UpdateDownloadButtonStatus();
             _downloadQueueView.EnqueueSong(song, cover);
         }
+
+        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+        internal void HandleDidPressPreview(BeatSaverSharp.Beatmap song)
+        {
+            Plugin.log.Info("Preview pressed for song: " + song.Metadata.SongName);
+
+            Misc.SongDownloader.Instance.songDownloaded += Play;
+
+            Progress<double> downloadProgress = new Progress<double>(ProgressUpdate);
+
+            Task doingWork = Misc.SongDownloader.Instance.DownloadSong(song, cancellationTokenSource.Token, downloadProgress, true, true);
+            doingWork.ContinueWith(OnWorkCompleted);
+        }
+
+        AudioSource myAudioSource = new AudioSource();
+
+        void OnWorkCompleted(Task task)
+        {
+
+        }
+
+        void ProgressUpdate(double task)
+        {
+
+        }
+
+        void Play(BeatSaverSharp.Beatmap song, string path)
+        {
+            // Unload audio clip
+            //if (myAudioSource.clip != null)
+            //{
+            //myAudioSource.Stop();
+            //AudioClip clip = myAudioSource.clip;
+            //myAudioSource.clip = null;
+            // clip.UnloadAudioData();
+            //DestroyImmediate(clip, false); // This is important to avoid memory leak
+            // }
+            myAudioSource = gameObject.AddComponent<AudioSource>();
+            //myAudioSource.volume = Misc.Preferences.shared.Volume;
+            // Load Clip then assign to audio source and play
+            LoadClip("file://" + path + "/song.egg", (clip) => { myAudioSource.clip = clip; myAudioSource.Play(); });
+        }
+
+        public void LoadClip(string fileName, Action<AudioClip> onLoadingCompleted)
+        {
+            StartCoroutine(LoadClipCoroutine(fileName, onLoadingCompleted));
+        }
+
+        IEnumerator LoadClipCoroutine(string file, Action<AudioClip> onLoadingCompleted)
+        {
+            UnityWebRequest AudioFiles = UnityWebRequestMultimedia.GetAudioClip(file, AudioType.OGGVORBIS);
+            yield return AudioFiles.SendWebRequest();
+
+            onLoadingCompleted(DownloadHandlerAudioClip.GetContent(AudioFiles));
+        }
+
         internal void HandleMultiSelectDownload()
         {
             _downloadQueueView.EnqueueSongs(_moreSongsView._multiSelectSongs.ToArray(), _downloadQueueView.cancellationTokenSource.Token);

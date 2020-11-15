@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace BeatSaverDownloader.Misc
 {
     public class SongDownloader : MonoBehaviour
     {
-        public event Action<BeatSaverSharp.Beatmap> songDownloaded;
+        public event Action<BeatSaverSharp.Beatmap, string> songDownloaded;
 
         private static SongDownloader _instance = null;
 
@@ -52,22 +53,27 @@ namespace BeatSaverDownloader.Misc
             _alreadyDownloadedSongs = new HashSet<string>(levels.Values.Select(x => SongCore.Collections.hashForLevelID(x.levelID)));
         }
 
-        public async Task DownloadSong(BeatSaverSharp.Beatmap song, System.Threading.CancellationToken token, IProgress<double> progress = null, bool direct = false)
+        public async Task DownloadSong(BeatSaverSharp.Beatmap song, System.Threading.CancellationToken token, IProgress<double> progress = null, bool direct = false, bool preview = false)
         {
             try
             {
                 string customSongsPath = CustomLevelPathHelper.customLevelsDirectoryPath;
+                if (preview)
+                {
+                    customSongsPath = Path.GetTempPath();
+                }
                 if (!Directory.Exists(customSongsPath))
                 {
                     Directory.CreateDirectory(customSongsPath);
                 }
                 var zip = await song.DownloadZip(direct, token, progress).ConfigureAwait(false); 
                 Plugin.log.Info("Downloaded zip!");
-                await ExtractZipAsync(song, zip, customSongsPath).ConfigureAwait(false);
-                songDownloaded?.Invoke(song);
+                string result = await ExtractZipAsync(song, zip, customSongsPath).ConfigureAwait(false);
+                songDownloaded?.Invoke(song, result);
             }
             catch (Exception e)
             {
+                Plugin.log.Critical($"Unable to download! Exception: {e}");
                 if (e is TaskCanceledException)
                     Plugin.log.Warn("Song Download Aborted.");
                 else
@@ -77,7 +83,7 @@ namespace BeatSaverDownloader.Misc
             }
         }
 
-        private async Task ExtractZipAsync(BeatSaverSharp.Beatmap songInfo, byte[] zip, string customSongsPath, bool overwrite = false)
+        private async Task<string> ExtractZipAsync(BeatSaverSharp.Beatmap songInfo, byte[] zip, string customSongsPath, bool overwrite = false)
         {
             Stream zipStream = new MemoryStream(zip);
             try
@@ -87,7 +93,7 @@ namespace BeatSaverDownloader.Misc
                 ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
                 string basePath = songInfo.Key + " (" + songInfo.Metadata.SongName + " - " + songInfo.Metadata.LevelAuthorName + ")";
                 basePath = string.Join("", basePath.Split((Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).ToArray())));
-                string path = customSongsPath + "/" + basePath;
+                string path = customSongsPath + basePath;
                 if (!overwrite && Directory.Exists(path))
                 {
                     int pathNum = 1;
@@ -107,12 +113,13 @@ namespace BeatSaverDownloader.Misc
                     }
                 }).ConfigureAwait(false);
                 archive.Dispose();
+                return path;
             }
             catch (Exception e)
             {
                 Plugin.log.Critical($"Unable to extract ZIP! Exception: {e}");
                 _extractingZip = false;
-                return;
+                return null;
             }
             zipStream.Close();
         }
