@@ -4,6 +4,7 @@ using HMUI;
 using System;
 using UnityEngine;
 using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace BeatSaverDownloader.UI
 {
@@ -41,7 +42,7 @@ namespace BeatSaverDownloader.UI
                 _multiSelectDetailView.multiSelectClearPressed += _moreSongsView.MultiSelectClear;
                 _multiSelectDetailView.multiSelectDownloadPressed += HandleMultiSelectDownload;
 
-                AudioSource audioSource = gameObject.AddComponent<AudioSource>();
+                AudioSource audioSource = Resources.FindObjectsOfTypeAll<AudioSource>().FirstOrDefault(); ;
                 audioSource.volume = Misc.Preferences.shared.Volume;
                 _songPlayer = new Misc.SongPlayer(audioSource);
             }
