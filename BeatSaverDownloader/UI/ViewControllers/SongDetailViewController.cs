@@ -38,7 +38,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
         private CurvedTextMeshPro _obstaclesText;
         private CurvedTextMeshPro _bombsText;
 
-        
 
         public Action<BeatSaverSharp.Beatmap, Sprite> didPressDownload;
         public Action<BeatSaverSharp.Beatmap> didPressPreview;
@@ -113,15 +112,12 @@ namespace BeatSaverDownloader.UI.ViewControllers
         }
 
         [UIComponent("previewButton")]
-        private Button _previewButton;
+        private Button _previewButton = null;
 
         [UIAction("previewPressed")]
         internal void PreviewPressed()
         {
             didPressPreview?.Invoke(_currentSong);
-            //_previewButton = gameObject.GetComponentsInChildren<GameObject>().First(x => x.gameObject.transform.parent.name == "previewButton");
-            //_previewButton.text = "Stop preview";
-            _previewButton.GetComponentInChildren<Text>().text = "Stop preview";
         }
 
         internal void ClearData()
@@ -168,6 +164,7 @@ namespace BeatSaverDownloader.UI.ViewControllers
             if (cover != null)
                 _coverImage.sprite = cover;
             UpdateDownloadButtonStatus();
+            UpdatePreviewButtonTitle("Listen");
             SetupCharacteristicDisplay();
             SelectedCharacteristic(_currentSong.Metadata.Characteristics[0]);
             UploaderInteractable = true;
@@ -178,6 +175,30 @@ namespace BeatSaverDownloader.UI.ViewControllers
         internal void UpdateDownloadButtonStatus()
         {
             DownloadInteractable = !Misc.SongDownloader.Instance.IsSongDownloaded(_currentSong.Hash);
+        }
+
+        internal void SongStateChanged(Misc.SongControl songControl)
+        {
+            if (songControl.song != _currentSong) { return; }
+
+            switch (songControl.state)
+            {
+                case Misc.SongControl.State.Initial:
+                case Misc.SongControl.State.Paused:
+                    UpdatePreviewButtonTitle("Listen");
+                    break;
+                case Misc.SongControl.State.Playing:
+                    UpdatePreviewButtonTitle("Pause");
+                    break;
+                case Misc.SongControl.State.Downloading:
+                    UpdatePreviewButtonTitle("Wait...");
+                    break;
+            }
+        }
+
+        internal void UpdatePreviewButtonTitle(string title)
+        {
+            _previewButton.GetComponentInChildren<TextMeshProUGUI>().text = title;
         }
 
         protected override void DidDeactivate(bool removedFromHierarchy, bool screenSystemDisabling)
@@ -212,8 +233,6 @@ namespace BeatSaverDownloader.UI.ViewControllers
             _notesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "NotesCount");
             _obstaclesText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "ObstaclesCount");
             _bombsText = _levelDetails.GetComponentsInChildren<CurvedTextMeshPro>().First(x => x.gameObject.transform.parent.name == "BombsCount");
-
-           
 
             //     _timeText.text = "--";
             //      _bpmText.text = "--";

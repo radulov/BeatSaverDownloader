@@ -57,7 +57,7 @@ namespace BeatSaverDownloader.Misc
         {
             try
             {
-                string customSongsPath = CustomLevelPathHelper.customLevelsDirectoryPath;
+                string customSongsPath = CustomLevelPathHelper.customLevelsDirectoryPath + "/";
                 if (preview)
                 {
                     customSongsPath = Path.GetTempPath();

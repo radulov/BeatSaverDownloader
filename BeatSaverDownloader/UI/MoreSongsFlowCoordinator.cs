@@ -4,10 +4,6 @@ using HMUI;
 using System;
 using UnityEngine;
 using System.Runtime.CompilerServices;
-using System.Collections;
-using System.Threading;
-using System.Threading.Tasks;
-using UnityEngine.Networking;
 
 namespace BeatSaverDownloader.UI
 {
@@ -45,7 +41,9 @@ namespace BeatSaverDownloader.UI
                 _multiSelectDetailView.multiSelectClearPressed += _moreSongsView.MultiSelectClear;
                 _multiSelectDetailView.multiSelectDownloadPressed += HandleMultiSelectDownload;
 
-                _songPlayer = new Misc.SongPlayer();
+                AudioSource audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.volume = Misc.Preferences.shared.Volume;
+                _songPlayer = new Misc.SongPlayer(audioSource);
             }
         }
 
@@ -96,6 +94,7 @@ namespace BeatSaverDownloader.UI
         {
             _songDetailView.ClearData();
             _songDescriptionView.ClearData();
+            _songPlayer.PauseAll();
             if (!_moreSongsView.MultiSelectEnabled)
             {
                 if (!_songDetailView.isInViewControllerHierarchy)
@@ -111,8 +110,6 @@ namespace BeatSaverDownloader.UI
                 string grammar = count > 1 ? "Songs" : "Song";
                 _multiSelectDetailView.MultiDownloadText = $"Add {count} {grammar} To Queue";
             }
-
-
         }
 
         internal void HandleDidPressDownload(BeatSaverSharp.Beatmap song, Sprite cover)
@@ -123,60 +120,21 @@ namespace BeatSaverDownloader.UI
             _downloadQueueView.EnqueueSong(song, cover);
         }
 
-        internal CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
         internal void HandleDidPressPreview(BeatSaverSharp.Beatmap song)
         {
             Plugin.log.Info("Preview pressed for song: " + song.Metadata.SongName);
 
-            Misc.SongDownloader.Instance.songDownloaded += Play;
+            Misc.SongControl control = _songPlayer.GetControl(song);
+            control.stateChanged += _songDetailView.SongStateChanged;
 
-            Progress<double> downloadProgress = new Progress<double>(ProgressUpdate);
-
-            Task doingWork = Misc.SongDownloader.Instance.DownloadSong(song, cancellationTokenSource.Token, downloadProgress, true, true);
-            doingWork.ContinueWith(OnWorkCompleted);
-        }
-
-        AudioSource myAudioSource = new AudioSource();
-
-        void OnWorkCompleted(Task task)
-        {
-
-        }
-
-        void ProgressUpdate(double task)
-        {
-
-        }
-
-        void Play(BeatSaverSharp.Beatmap song, string path)
-        {
-            // Unload audio clip
-            //if (myAudioSource.clip != null)
-            //{
-            //myAudioSource.Stop();
-            //AudioClip clip = myAudioSource.clip;
-            //myAudioSource.clip = null;
-            // clip.UnloadAudioData();
-            //DestroyImmediate(clip, false); // This is important to avoid memory leak
-            // }
-            myAudioSource = gameObject.AddComponent<AudioSource>();
-            //myAudioSource.volume = Misc.Preferences.shared.Volume;
-            // Load Clip then assign to audio source and play
-            LoadClip("file://" + path + "/song.egg", (clip) => { myAudioSource.clip = clip; myAudioSource.Play(); });
-        }
-
-        public void LoadClip(string fileName, Action<AudioClip> onLoadingCompleted)
-        {
-            StartCoroutine(LoadClipCoroutine(fileName, onLoadingCompleted));
-        }
-
-        IEnumerator LoadClipCoroutine(string file, Action<AudioClip> onLoadingCompleted)
-        {
-            UnityWebRequest AudioFiles = UnityWebRequestMultimedia.GetAudioClip(file, AudioType.OGGVORBIS);
-            yield return AudioFiles.SendWebRequest();
-
-            onLoadingCompleted(DownloadHandlerAudioClip.GetContent(AudioFiles));
+            if (control.state == Misc.SongControl.State.Playing)
+            {
+                control.Pause();
+            }
+            else
+            {
+                control.Play();
+            }
         }
 
         internal void HandleMultiSelectDownload()
@@ -222,6 +180,7 @@ namespace BeatSaverDownloader.UI
             {
                 PopViewControllersFromNavigationController(_moreSongsNavigationcontroller, 1, null, true);
             }
+            _songPlayer.PauseAll();
             _moreSongsView.Cleanup();
             _downloadQueueView.AbortAllDownloads();
             ParentFlowCoordinator.DismissFlowCoordinator(this);
